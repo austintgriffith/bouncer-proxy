@@ -1,0 +1,33 @@
+
+body {
+  font-family: sans-serif;
+  color:#888888;
+  font-size:28px;
+  font-weight:bold;
+  background-color: #313131;
+}
+a {
+  color:#aaaaaa;
+  text-decoration: none;
+}
+a:visited {
+  color:#999999;
+  text-decoration: none;
+}
+
+.col {
+  text-align: center;
+  padding: 10px;
+  height: 100%;
+}
+
+
+.button{
+  padding:10px;
+  margin:10px;
+  border:1px solid #eeeeee;
+  background-color:#e6e6e6;
+  width:200px;
+  text-align:center;
+  cursor:pointer;
+}

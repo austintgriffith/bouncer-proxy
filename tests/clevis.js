@@ -119,6 +119,8 @@ module.exports = {
           fs.writeFileSync("src/contracts/"+thisContract+".blocknumber.js","module.exports = \""+blockNumber+"\"");
           let abi = fs.readFileSync(thisContract+"/"+thisContract+".abi").toString().trim()
           fs.writeFileSync("src/contracts/"+thisContract+".abi.js","module.exports = "+abi);
+          let bytecode = fs.readFileSync(thisContract+"/"+thisContract+".bytecode").toString().trim()
+          fs.writeFileSync("src/contracts/"+thisContract+".bytecode.js","module.exports = \""+bytecode+"\"");
         }
         fs.writeFileSync("src/contracts/contracts.js","module.exports = "+JSON.stringify(module.exports.contracts));
         module.exports.reload()
@@ -129,8 +131,11 @@ module.exports = {
     describe('#transfer() ', function() {
       it('should give metamask account some ether or tokens to test', async function() {
         this.timeout(600000)
-        const result = await clevis("sendTo","0.1","0","0x2a906694D15Df38F59e76ED3a5735f8AAbccE9cb")
+        let result = await clevis("sendTo","0.1","0","0x2a906694D15Df38F59e76ED3a5735f8AAbccE9cb")
         printTxResult(result)
+        result = await clevis("sendTo","0.1","0","0x5f19cefc9c9d1bc63f9e4d4780493ff5577d238b")
+        printTxResult(result)
+
         //here is an example of running a funtion from within this object:
         //module.exports.mintTo("Greens",0,"0x2a906694d15df38f59e76ed3a5735f8aabcce9cb",20)
         //view more examples here: https://github.com/austintgriffith/galleass/blob/master/tests/galleass.js
