@@ -10,6 +10,7 @@ package-lock.json
 */*/*.abi
 */*/*.bytecode
 */*/*.address
+*/*/*.compiled
 */*/*.run.xml
 */*/*.log.*
 */*/*.blockNumber
@@ -17,6 +18,7 @@ package-lock.json
 */*.bytecode
 */*.bib
 */*.address
+*/*.compiled
 */*.run.xml
 */*.log.*
 */*.blockNumber
