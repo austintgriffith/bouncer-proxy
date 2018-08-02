@@ -25,22 +25,19 @@ web3.eth.getAccounts().then((_accounts)=>{
   console.log("ACCOUNTS",accounts)
 })
 
-//const NETWORK = parseInt(fs.readFileSync("../deploy.network").toString().trim())
-//if(!NETWORK){
-//  console.log("No deploy.network found exiting...")
-//  process.exit()
-//}
-//console.log("NETWORK:",NETWORK)
+const NETWORK = parseInt(fs.readFileSync("../deploy.network").toString().trim())
+if(!NETWORK){
+  console.log("No deploy.network found exiting...")
+  process.exit()
+}
+console.log("NETWORK:",NETWORK)
 
 let redisHost = 'localhost'
 let redisPort = 57300
-//if(NETWORK==3){
-//  redisHost = 'stagecryptogs.048tmy.0001.use2.cache.amazonaws.com'
-//  redisPort = 6379
-//}else if(NETWORK==1){
-//  redisHost = 'cryptogs.048tmy.0001.use2.cache.amazonaws.com'
-//  redisPort = 6379
-//}
+if(NETWORK>0&&NETWORK<9){
+ redisHost = 'cryptogsnew.048tmy.0001.use2.cache.amazonaws.com'
+ redisPort = 6379
+}
 let redis = new Redis({
   port: redisPort,
   host: redisHost,
