@@ -4,5 +4,5 @@
   "ethprice": 467.751,
   "deploygas": 5500000,
   "xfergas": 1300000,
-  "DEBUG": true
+  "DEBUG": false
 }

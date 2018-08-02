@@ -6,19 +6,23 @@ class Owner extends Component {
     super(props);
     this.state = {
       addBouncer:"",
-      bouncers:[]
+      removeBouncer:"",
+      bouncers:[],
+      removebouncers:[]
     }
   }
-  handleInput(e){
-    let update = {}
-    update[e.target.name] = e.target.value
-    this.setState(update)
+  handleBouncer(e){
+    this.props.updateBouncer(e.target.value)
   }
   addBouncer(){
     let {tx,contract} = this.props
-    console.log("Add Bouncer ",this.state.addBouncer)
-    tx(contract.addBouncer(this.state.addBouncer),55000)
-
+    console.log("Add Bouncer ",this.props.bouncer)
+    tx(contract.addBouncer(this.props.bouncer),55000)
+  }
+  removeBouncer(){
+    let {tx,contract} = this.props
+    console.log("Remove Bouncer ",this.props.bouncer)
+    tx(contract.removeBouncer(this.props.bouncer),55000)
   }
   render() {
 
@@ -33,24 +37,33 @@ class Owner extends Component {
       })
     }
 
+    let bouncerBlockie
+    if(this.props.bouncer && this.props.bouncer.length){
+      bouncerBlockie = this.props.bouncer.toLowerCase()
+    }
+    console.log("bouncerBlockie",bouncerBlockie)
+    if(!bouncerBlockie || bouncerBlockie.length<=0){
+      bouncerBlockie = "0x0000000000000000000000000000000000000000"
+    }
+    console.log("bouncerBlockie2",bouncerBlockie)
     return (
       <div>
-        Add Bouncer:
         <input
           style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
-          type="text" name="addBouncer" value={this.state.addBouncer} onChange={this.handleInput.bind(this)}
+          type="text" name="addBouncer" value={this.props.bouncer} onChange={this.handleBouncer.bind(this)}
         />
         <Blockie
-          address={this.state.addBouncer.toLowerCase()}
+          address={bouncerBlockie}
         />
         <span className={"button"} style={{padding:3}} onClick={this.addBouncer.bind(this)}>
-          Save
+          Add Bouncer
         </span>
-
+        <span className={"button"} style={{padding:3}} onClick={this.removeBouncer.bind(this)}>
+          Remove Bouncer
+        </span>
         <div>
           {bouncers}
         </div>
-
         <Events
         config={{hide:false,DEBUG:true}}
           contract={this.props.contract}
@@ -64,7 +77,24 @@ class Owner extends Component {
             this.props.onUpdate(update)
           }}
         />
-
+        <Events
+        config={{hide:false,DEBUG:true}}
+          contract={this.props.contract}
+          eventName={"RoleRemoved"}
+          block={this.props.block}
+          onUpdate={(eventData,allEvents)=>{
+            console.log("RoleRemoved",eventData)
+            let newBouncers = []
+            for(let b in this.state.bouncers){
+              if(this.state.bouncers[b]!=eventData.operator.toLowerCase()){
+                newBouncers.push(this.state.bouncers[b])
+              }
+            }
+            let update = {bouncers:newBouncers}
+            this.setState(update)
+            this.props.onUpdate(update)
+          }}
+        />
         <Events
         config={{hide:false}}
           contract={this.props.contract}
@@ -75,7 +105,6 @@ class Owner extends Component {
             //this.setState({roleAddedEvents:allEvents.reverse()})
           }}
         />
-
       </div>
     );
   }

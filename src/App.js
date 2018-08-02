@@ -1,12 +1,16 @@
 import React, { Component } from 'react';
-import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie } from "dapparatus"
+import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, Address } from "dapparatus"
 import Web3 from 'web3';
 import './App.css';
 import Owner from "./components/owner.js"
 import Bouncer from "./components/bouncer.js"
+import Backend from "./components/backend.js"
 import QRCode from 'qrcode.react';
+import axios from 'axios';
 
 
+
+const backendUrl = "http://localhost:10001/"
 
 class App extends Component {
   constructor(props) {
@@ -17,20 +21,26 @@ class App extends Component {
      gwei: 4,
      address: window.location.pathname.replace("/",""),
      contract: false,
-     owner: ""
+     owner: "",
+     bouncer: ""
    }
   }
   deployBouncerProxy() {
     let {web3,tx,contracts} = this.state
     console.log("Deploying bouncer...")
     let code = require("./contracts/BouncerProxy.bytecode.js")
-    tx(contracts.BouncerProxy._contract.deploy({data:code}),1800000)
+    tx(contracts.BouncerProxy._contract.deploy({data:code}),1220000)
+  }
+  updateBouncer(value){
+    console.log("UPDATE BOUNCER",value)
+    this.setState({bouncer:value})
   }
   render() {
     let {web3,account,contracts,tx,gwei,block,avgBlockTime,etherscan} = this.state
 
     let metamask = (
       <Metamask
+        config={{requiredNetwork:['Rinkeby']}}
         onUpdate={(state)=>{
           console.log("metamask state update:",state)
           if(state.web3Provider) {
@@ -96,6 +106,7 @@ class App extends Component {
     let deployButton = ""
     let contractDisplay = ""
     let qr = ""
+    let backend = ""
 
     if(web3 && contracts){
       if(!this.state.address){
@@ -110,6 +121,14 @@ class App extends Component {
           </div>
         )
 
+        backend = (
+          <Backend
+            {...this.state}
+            backendUrl={backendUrl}
+            updateBouncer={this.updateBouncer.bind(this)}
+          />
+        )
+
         let userDisplay = ""
         if(this.state.owner.toLowerCase()==this.state.account.toLowerCase()){
 
@@ -121,6 +140,7 @@ class App extends Component {
                   console.log("bouncerUpdate",bouncerUpdate)
                   this.setState(bouncerUpdate)
                 }}
+                updateBouncer={this.updateBouncer.bind(this)}
               />
             </div>
           )
@@ -129,6 +149,7 @@ class App extends Component {
             <div>
               <Bouncer
                 {...this.state}
+                backendUrl={backendUrl}
               />
             </div>
           )
@@ -137,8 +158,18 @@ class App extends Component {
         contractDisplay = (
           <div style={{padding:20}}>
             <h2>BouncerProxy</h2>
-            <div><Blockie address={this.state.contract._address}/> {this.state.contract._address}</div>
-            <div><Blockie address={this.state.owner}/>  {this.state.owner}</div>
+            <div>
+              <Address
+                {...this.state}
+                address={this.state.contract._address}
+              />
+            </div>
+            <div>
+              <Address
+                {...this.state}
+                address={this.state.owner}
+              />
+            </div>
             {userDisplay}
           </div>
         )
@@ -165,6 +196,7 @@ class App extends Component {
         {deployButton}
         {contractDisplay}
         {qr}
+        {backend}
       </div>
     );
   }

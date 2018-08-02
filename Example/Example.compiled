@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 /*
 
-  This is just a very simple example contract used to demonstrate the BouncerProxy making calls to it 
+  This is just a very simple example contract used to demonstrate the BouncerProxy making calls to it
 
 */
 
