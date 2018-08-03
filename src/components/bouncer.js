@@ -69,16 +69,18 @@ class Bouncer extends Component {
         rewardAmount = this.state.rewardToken
       }
     }
+    
     console.log("Reward: "+rewardAmount+" tokens at address "+rewardAddress)
     const parts = [
       proxyAddress,
       fromAddress,
       toAddress,
-      web3.utils.toTwosComplement(value),
+      web3.utils.padLeft("0x"+value,64),
       txData,
       rewardAddress,
-      web3.utils.toTwosComplement(rewardAmount),
-      web3.utils.toTwosComplement(nonce),
+      /*web3.utils.toTwosComplement(rewardAmount),*/
+      web3.utils.padLeft("0x"+rewardAmount,64),
+      web3.utils.padLeft("0x"+nonce,64),
     ]
     console.log("PARTS",parts)
     const hashOfMessage = soliditySha3(...parts);

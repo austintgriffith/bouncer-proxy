@@ -8,7 +8,12 @@ import Backend from "./components/backend.js"
 import Miner from "./components/miner.js"
 import QRCode from 'qrcode.react';
 
-const backendUrl = "http://localhost:10001/"
+let backendUrl = "http://localhost:10001/"
+console.log("window.location:",window.location)
+if(window.location.href.indexOf("metatx.io")>=0)
+{
+  backendUrl = "https://backend.metatx.io/"
+}
 
 class App extends Component {
   constructor(props) {
