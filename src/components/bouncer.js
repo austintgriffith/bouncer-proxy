@@ -11,6 +11,7 @@ class Bouncer extends Component {
     super(props);
     this.state = {
       count: "loading...",
+      gasLimit: 120000
     }
   }
   handleInput(e){
@@ -58,8 +59,15 @@ class Bouncer extends Component {
     let rewardAddress = "0x0000000000000000000000000000000000000000"
     let rewardAmount = 0
     if(this.state.rewardTokenAddress){
-      rewardAddress = this.state.rewardTokenAddress
-      rewardAmount = this.state.rewardToken
+      if(this.state.rewardTokenAddress=="1"||this.state.rewardTokenAddress=="0x0000000000000000000000000000000000000001"){
+        rewardAddress = "0x0000000000000000000000000000000000000001"
+        this.setState({rewardTokenAddress:rewardAddress})
+        rewardAmount = web3.utils.toWei(this.state.rewardToken+"", 'ether')
+        console.log("rewardAmount",rewardAmount)
+      }else{
+        rewardAddress = this.state.rewardTokenAddress
+        rewardAmount = this.state.rewardToken
+      }
     }
     console.log("Reward: "+rewardAmount+" tokens at address "+rewardAddress)
     const parts = [
@@ -79,6 +87,7 @@ class Bouncer extends Component {
     let sig = await this.props.web3.eth.personal.sign(""+message,account)
     console.log("SIG",sig)
     let postData = {
+      gas: this.state.gasLimit,
       message: message,
       parts:parts,
       sig:sig,
@@ -102,18 +111,6 @@ class Bouncer extends Component {
         <div className="button" onClick={this.addAmountMeta.bind(this)}>
           meta addAmount(5)
         </div>
-
-
-        <div>
-        Reward:
-        <input
-            style={{verticalAlign:"middle",width:50,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
-            type="text" name="rewardToken" value={this.state.rewardToken} onChange={this.handleInput.bind(this)}
-        /> of token <input
-            style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
-            type="text" name="rewardTokenAddress" value={this.state.rewardTokenAddress} onChange={this.handleInput.bind(this)}
-        />
-        </div>
         <div>
           Send
           <input
@@ -133,7 +130,7 @@ class Bouncer extends Component {
               style={{verticalAlign:"middle",width:50,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
               type="text" name="sendToken" value={this.state.sendToken} onChange={this.handleInput.bind(this)}
           /> of token <input
-              style={{verticalAlign:"middle",width:50,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
+              style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
               type="text" name="sendTokenAddress" value={this.state.sendTokenAddress} onChange={this.handleInput.bind(this)}
           />  to address <input
               style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
@@ -141,6 +138,23 @@ class Bouncer extends Component {
           />
           <div className="button" onClick={this.sendToken.bind(this)}>
            Send Token
+          </div>
+
+          <div style={{borderTop:"1px solid #DDDDDD",marginTop:25,paddingTop:15}}>
+          Gas Limit: <input
+              style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
+              type="text" name="gasLimit" value={this.state.gasLimit} onChange={this.handleInput.bind(this)}
+          />
+          </div>
+          <div>
+          Reward:
+          <input
+              style={{verticalAlign:"middle",width:200,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
+              type="text" name="rewardToken" value={this.state.rewardToken} onChange={this.handleInput.bind(this)}
+          /> of token <input
+              style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
+              type="text" name="rewardTokenAddress" value={this.state.rewardTokenAddress} onChange={this.handleInput.bind(this)}
+          />
           </div>
 
         </div>

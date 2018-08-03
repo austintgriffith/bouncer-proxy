@@ -19,6 +19,8 @@ var Web3 = require('web3');
 var web3 = new Web3();
 web3.setProvider(new web3.providers.HttpProvider('http://0.0.0.0:8545'));
 
+const DESKTOPMINERACCOUNT = 3 //index in geth
+
 let accounts
 web3.eth.getAccounts().then((_accounts)=>{
   accounts=_accounts
@@ -74,6 +76,13 @@ app.get('/', (req, res) => {
 
 });
 
+app.get('/miner', (req, res) => {
+  console.log("/miner")
+  res.set('Content-Type', 'application/json');
+  res.end(JSON.stringify({address:accounts[DESKTOPMINERACCOUNT]}));
+
+});
+
 app.get('/sigs/:contract', (req, res) => {
   console.log("/sigs/"+req.params.contract)
   let sigsKey = req.params.contract+"sigs"
@@ -121,7 +130,7 @@ app.post('/tx', (req, res) => {
     console.log("Forwarding tx to ",contract._address," with local account ",accounts[3])
 
     let txparams = {
-      from: accounts[3],
+      from: accounts[DESKTOPMINERACCOUNT],
       gas: req.body.gas,
       gasPrice:Math.round(4 * 1000000000)
     }

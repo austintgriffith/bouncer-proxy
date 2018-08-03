@@ -1,3 +1,4 @@
+deploy.network
 aws.json
 backend/redisdata
 accounts.json

@@ -5,10 +5,8 @@ import './App.css';
 import Owner from "./components/owner.js"
 import Bouncer from "./components/bouncer.js"
 import Backend from "./components/backend.js"
+import Miner from "./components/miner.js"
 import QRCode from 'qrcode.react';
-import axios from 'axios';
-
-
 
 const backendUrl = "http://localhost:10001/"
 
@@ -40,7 +38,7 @@ class App extends Component {
 
     let metamask = (
       <Metamask
-        config={{requiredNetwork:['Rinkeby']}}
+        config={{requiredNetwork:['Unknown','Rinkeby']}}
         onUpdate={(state)=>{
           console.log("metamask state update:",state)
           if(state.web3Provider) {
@@ -157,6 +155,7 @@ class App extends Component {
 
         contractDisplay = (
           <div style={{padding:20}}>
+            <Miner backendUrl={backendUrl} {...this.state} />
             <h2>BouncerProxy</h2>
             <div>
               <Address
@@ -197,6 +196,7 @@ class App extends Component {
         {contractDisplay}
         {qr}
         {backend}
+
       </div>
     );
   }

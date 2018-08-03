@@ -77,7 +77,16 @@ contract BouncerProxy is SignatureBouncer {
       // if they don't have any tokens, we move on and send the tokens from the identity contract
       //require(rewardToken==address(0) || (StandardToken(rewardToken)).transferFrom(signer,msg.sender,rewardAmount) || (StandardToken(rewardToken)).transfer(address(this),rewardAmount));
       //for now I will just send tokens from the proxy/identity contract
-      require(rewardToken==address(0) || (StandardToken(rewardToken)).transfer(msg.sender,rewardAmount));
+      if(rewardToken==address(0)){
+        //ignore reward, 0 means none
+      }else if(rewardToken==address(1)){
+        //REWARD ETHER
+        msg.sender.transfer(rewardAmount);
+      }else{
+        //REWARD TOKEN
+        require((StandardToken(rewardToken)).transfer(msg.sender,rewardAmount));
+      }
+
 
       //execute the transaction with all the given parameters
       require(executeCall(destination, value, data));
