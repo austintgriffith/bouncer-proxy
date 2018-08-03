@@ -47,36 +47,22 @@ pragma solidity ^0.4.24;
 //  (multiple developer accounts will need to be added as Bouncers to 'whitelist' them to make meta transactions)
 //you run your own relayer and pay for all of their transactions, revoking any bad actors if needed
 
-
-
 import "openzeppelin-solidity/contracts/access/SignatureBouncer.sol";
-
 contract BouncerProxy is SignatureBouncer {
-
   constructor() public { }
-
   //to avoid replay
   mapping(address => uint) public nonce;
-
   // copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
   function () payable { emit Received(msg.sender, msg.value); }
   event Received (address indexed sender, uint value);
-
   // copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
   function forward(bytes sig, address signer, address destination, uint value, bytes data, address rewardToken, uint rewardAmount) public {
-
       //the hash contains all of the information about the meta transaction to be called
       bytes32 _hash = keccak256(abi.encodePacked(address(this), signer, destination, value, data, rewardToken, rewardAmount, nonce[signer]++));
-
       //this makes sure signer signed correctly AND signer is a valid bouncer
       require(isValidDataHash(_hash,sig));
-
-      //make sure the signer pays in whatever token the sender and signer agreed to
+      //make sure the signer pays in whatever token (or ether) the sender and signer agreed to
       // or skip this if the sender is incentivized in other ways and there is no need for a token
-      // we also try to pull from the 'etherless' account first because maybe we issued them a tx token
-      // if they don't have any tokens, we move on and send the tokens from the identity contract
-      //require(rewardToken==address(0) || (StandardToken(rewardToken)).transferFrom(signer,msg.sender,rewardAmount) || (StandardToken(rewardToken)).transfer(address(this),rewardAmount));
-      //for now I will just send tokens from the proxy/identity contract
       if(rewardToken==address(0)){
         //ignore reward, 0 means none
       }else if(rewardToken==address(1)){
@@ -86,12 +72,9 @@ contract BouncerProxy is SignatureBouncer {
         //REWARD TOKEN
         require((StandardToken(rewardToken)).transfer(msg.sender,rewardAmount));
       }
-
-
       //execute the transaction with all the given parameters
       require(executeCall(destination, value, data));
       emit Forwarded(sig, signer, destination, value, data, rewardToken, rewardAmount, _hash);
-
   }
   // when some frontends see that a tx is made from a bouncerproxy, they may want to parse through these events to find out who the signer was etc
   event Forwarded (bytes sig, address signer, address destination, uint value, bytes data,address rewardToken, uint rewardAmount,bytes32 _hash);
@@ -104,10 +87,8 @@ contract BouncerProxy is SignatureBouncer {
        success := call(gas, to, value, add(data, 0x20), mload(data), 0, 0)
     }
   }
-
 }
 
 contract StandardToken {
-  function transferFrom(address _from,address _to,uint256 _value) public returns (bool) { }
   function transfer(address _to,uint256 _value) public returns (bool) { }
 }
