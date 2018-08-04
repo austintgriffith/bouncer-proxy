@@ -263,9 +263,6 @@ class App extends Component {
               </Button>
             </div>
             </Scaler>
-            <div style={{width:"100%",marginTop:60,marginLeft:60}}>
-              <iframe width="560" height="315" src="https://www.youtube.com/embed/6r3SqCcEVU4" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-            </div>
           </div>
         </div>
       )
