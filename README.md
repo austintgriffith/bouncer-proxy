@@ -5,7 +5,7 @@ This is my sandbox for experimenting with etherless meta transactions. The heart
 
 -----
 
-[![screencast.png](https://raw.githubusercontent.com/austintgriffith/bouncer-proxy/src/images/videopreview.jpg)](https://youtu.be/6r3SqCcEVU4)
+[![screencast.png](https://raw.githubusercontent.com/austintgriffith/bouncer-proxy/master/src/images/videopreview.jpg)](https://youtu.be/6r3SqCcEVU4)
 
 -----
 
