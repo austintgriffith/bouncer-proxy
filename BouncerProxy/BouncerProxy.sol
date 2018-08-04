@@ -55,7 +55,7 @@ contract BouncerProxy is SignatureBouncer {
   // copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
   function () payable { emit Received(msg.sender, msg.value); }
   event Received (address indexed sender, uint value);
-  // copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
+  // original forward function copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
   function forward(bytes sig, address signer, address destination, uint value, bytes data, address rewardToken, uint rewardAmount) public {
       //the hash contains all of the information about the meta transaction to be called
       bytes32 _hash = keccak256(abi.encodePacked(address(this), signer, destination, value, data, rewardToken, rewardAmount, nonce[signer]++));
@@ -67,7 +67,7 @@ contract BouncerProxy is SignatureBouncer {
         //ignore reward, 0 means none
       }else if(rewardToken==address(1)){
         //REWARD ETHER
-        msg.sender.call.value(rewardAmount).gas(36000)();
+        require(msg.sender.call.value(rewardAmount).gas(36000)());
       }else{
         //REWARD TOKEN
         require((StandardToken(rewardToken)).transfer(msg.sender,rewardAmount));

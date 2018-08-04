@@ -17,7 +17,9 @@ class Owner extends Component {
   addBouncer(){
     let {tx,contract} = this.props
     console.log("Add Bouncer ",this.props.bouncer)
-    tx(contract.addBouncer(this.props.bouncer),55000)
+    tx(contract.addBouncer(this.props.bouncer),55000,(receipt)=>{
+      console.log("~~~~ BOUNCER ADDED:",receipt)
+    })
   }
   removeBouncer(){
     let {tx,contract} = this.props

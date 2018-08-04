@@ -3,10 +3,12 @@ import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, A
 import Web3 from 'web3';
 import './App.css';
 import Owner from "./components/owner.js"
+import AllBouncers from "./components/allBouncers.js"
 import Bouncer from "./components/bouncer.js"
 import Backend from "./components/backend.js"
 import Miner from "./components/miner.js"
 import QRCode from 'qrcode.react';
+import axios from 'axios';
 
 let backendUrl = "http://localhost:10001/"
 console.log("window.location:",window.location)
@@ -32,7 +34,23 @@ class App extends Component {
     let {web3,tx,contracts} = this.state
     console.log("Deploying bouncer...")
     let code = require("./contracts/BouncerProxy.bytecode.js")
-    tx(contracts.BouncerProxy._contract.deploy({data:code}),1220000)
+    tx(contracts.BouncerProxy._contract.deploy({data:code}),1220000,(receipt)=>{
+      console.log("~~~~~~ DEPLOY FROM DAPPARATUS:",receipt)
+      if(receipt.contractAddress){
+        axios.post(backendUrl+'deploy', receipt, {
+          headers: {
+              'Content-Type': 'application/json',
+          }
+        }).then((response)=>{
+          console.log("CACHE RESULT",response)
+          window.location = "/"+receipt.contractAddress
+        })
+        .catch((error)=>{
+          console.log(error);
+        })
+      }
+    })
+
   }
   updateBouncer(value){
     console.log("UPDATE BOUNCER",value)
@@ -88,10 +106,12 @@ class App extends Component {
               this.setState(state)
             }}
             onReceipt={(transaction,receipt)=>{
+              // this is one way to get the deployed contract address, but instead I'll switch
+              //  to a more straight forward callback system above
               console.log("Transaction Receipt",transaction,receipt)
-              if(receipt.contractAddress){
+              /*if(receipt.contractAddress){
                 window.location = "/"+receipt.contractAddress
-              }
+              }*/
             }}
           />
           <Gas
@@ -107,6 +127,7 @@ class App extends Component {
     }
 
     let deployButton = ""
+    let allBouncerContracts = ""
     let contractDisplay = ""
     let qr = ""
     let backend = ""
@@ -115,6 +136,11 @@ class App extends Component {
       if(!this.state.address){
         deployButton = (
           <div className={"button"} onClick={this.deployBouncerProxy.bind(this)}> DEPLOY </div>
+        )
+        allBouncerContracts = (
+          <AllBouncers
+            backendUrl={backendUrl}
+          />
         )
       }else if(this.state.contract){
 
@@ -164,7 +190,7 @@ class App extends Component {
           <div style={{padding:20}}>
             <Miner backendUrl={backendUrl} {...this.state} />
             <Scaler config={{startZoomAt:900}}>
-              <h2>BouncerProxy</h2>
+              <h2><a href="/">BouncerProxy</a></h2>
               <div>
                 <Address
                   {...this.state}
@@ -202,6 +228,7 @@ class App extends Component {
         {connectedDisplay}
         {events}
         {deployButton}
+        {allBouncerContracts}
         {contractDisplay}
         {qr}
         {backend}

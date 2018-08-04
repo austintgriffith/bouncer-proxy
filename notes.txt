@@ -1,5 +1,17 @@
 
+## whats next
 
+would love feedback from the community - this doesn't conform to the standards and it will need to
 
+more feedback from the 'desktop miners' about what txs in progress and what errors they have
 
-use account 0x0000000000000000000000000000000000000001 to pay ether for metatx
+ENS on everything just like in the universal login demo
+  - instead of passing around accounts it should be yourname.metatxr.eth
+
+this still requires frontends to change, I would like to hijack the .send function in web3
+  then detect if they are logged into a metatx account or not and send the given tx as meta
+    OR, work totally normal
+
+find a good method of sharing the open metatxs peer or peer so other desktop miners can participate
+
+clean up auth or maybe even create an allowance system

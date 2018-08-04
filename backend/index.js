@@ -70,6 +70,7 @@ function startParsers(){
 }
 
 app.get('/', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   console.log("/")
   res.set('Content-Type', 'application/json');
   res.end(JSON.stringify({hello:"world"}));
@@ -77,6 +78,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/miner', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   console.log("/miner")
   res.set('Content-Type', 'application/json');
   res.end(JSON.stringify({address:accounts[DESKTOPMINERACCOUNT]}));
@@ -84,6 +86,7 @@ app.get('/miner', (req, res) => {
 });
 
 app.get('/sigs/:contract', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   console.log("/sigs/"+req.params.contract)
   let sigsKey = req.params.contract+"sigs"
   redis.get(sigsKey, function (err, result) {
@@ -93,7 +96,19 @@ app.get('/sigs/:contract', (req, res) => {
 
 });
 
+app.get('/contracts', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/contracts")
+  let deployedContractsKey = "deployedcontracts"+NETWORK
+  redis.get(deployedContractsKey, function (err, result) {
+    res.set('Content-Type', 'application/json');
+    res.end(result);
+  })
+
+});
+
 app.post('/sign', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   console.log("/sign",req.body)
   let account = web3.eth.accounts.recover(req.body.message,req.body.sig)
   console.log("RECOVERED:",account)
@@ -118,7 +133,30 @@ app.post('/sign', (req, res) => {
   res.end(JSON.stringify({hello:"world"}));
 });
 
+app.post('/deploy', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/deploy",req.body)
+  let contractAddress = req.body.contractAddress
+  let deployedContractsKey = "deployedcontracts"+NETWORK
+  redis.get(deployedContractsKey, function (err, result) {
+    let contracts
+    try{
+      contracts = JSON.parse(result)
+    }catch(e){contracts = []}
+    if(!contracts) contracts = []
+    console.log("current contracts:",contracts)
+    if(contracts.indexOf(contractAddress)<0){
+      contracts.push(contractAddress)
+      console.log("saving contracts:",contracts)
+      redis.set(deployedContractsKey,JSON.stringify(contracts),'EX', 60 * 60 * 24 * 7);
+      res.set('Content-Type', 'application/json');
+      res.end(JSON.stringify({contract:contractAddress}));
+    }
+  });
+})
+
 app.post('/tx', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   console.log("/tx",req.body)
   let account = web3.eth.accounts.recover(req.body.message,req.body.sig)
   console.log("RECOVERED:",account)
