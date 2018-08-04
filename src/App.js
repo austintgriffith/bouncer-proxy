@@ -135,7 +135,7 @@ class App extends Component {
       if(!this.state.address){
         mainTitle = (
           <div className="titleCenter" style={{marginTop:-50,width:"100%"}}>
-            <Scaler config={{origin:"center center"}}>
+            <Scaler config={{origin:"50px center"}}>
             <div style={{width:"100%",textAlign:"center",fontSize:150}}>
              metatx.io
             </div>
@@ -152,12 +152,16 @@ class App extends Component {
               DEPLOY
               </Button>
             </div>
+
             <div style={{marginTop:150}}>
               <AllBouncers
                 backendUrl={backendUrl}
               />
             </div>
+
             </Scaler>
+
+
           </div>
 
         )
