@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, Address } from "dapparatus"
+import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, Address, Button } from "dapparatus"
 import Web3 from 'web3';
 import './App.css';
 import Owner from "./components/owner.js"
@@ -126,7 +126,7 @@ class App extends Component {
       )
     }
 
-    let deployButton = ""
+    let mainTitle = ""
     let allBouncerContracts = ""
     let contractDisplay = ""
     let qr = ""
@@ -134,8 +134,26 @@ class App extends Component {
 
     if(web3 && contracts){
       if(!this.state.address){
-        deployButton = (
-          <div className={"button"} onClick={this.deployBouncerProxy.bind(this)}> DEPLOY </div>
+        mainTitle = (
+          <div className="titleCenter" style={{marginTop:-50}}>
+            <div style={{width:"100%",textAlign:"center",fontSize:150}}>
+             metatx.io
+            </div>
+            <div style={{width:"100%",textAlign:"center",fontSize:14,marginBottom:20}}>
+             exploring etherless meta transactions and universal logins in ethereum
+            </div>
+            <div style={{width:"100%",textAlign:"center"}}>
+              <Button size="2" onClick={()=>{
+                window.location = "https://github.com/austintgriffith/bouncer-proxy/blob/master/README.md"
+              }}>
+              LEARN MORE
+              </Button>
+              <Button color="green" size="2" onClick={this.deployBouncerProxy.bind(this)}>
+              DEPLOY
+              </Button>
+            </div>
+          </div>
+
         )
         allBouncerContracts = (
           <AllBouncers
@@ -190,7 +208,7 @@ class App extends Component {
           <div style={{padding:20}}>
             <Miner backendUrl={backendUrl} {...this.state} />
             <Scaler config={{startZoomAt:900}}>
-              <h2><a href="/">BouncerProxy</a></h2>
+              <h1><a href="/">metatx.io</a></h1>
               <div>
                 <Address
                   {...this.state}
@@ -227,7 +245,7 @@ class App extends Component {
         {metamask}
         {connectedDisplay}
         {events}
-        {deployButton}
+        {mainTitle}
         {allBouncerContracts}
         {contractDisplay}
         {qr}

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie } from "dapparatus"
+import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, Button } from "dapparatus"
 
 class Owner extends Component {
   constructor(props) {
@@ -51,6 +51,7 @@ class Owner extends Component {
     return (
       <div>
         <Scaler config={{startZoomAt:1000}}>
+        <div style={{width:800,borderBottom:"1px solid #BBBBBB",marginBottom:25,paddingBottom:15}}></div>
         <input
           style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
           type="text" name="addBouncer" value={this.props.bouncer} onChange={this.handleBouncer.bind(this)}
@@ -58,12 +59,12 @@ class Owner extends Component {
         <Blockie
           address={bouncerBlockie}
         />
-        <span className={"button"} style={{padding:3}} onClick={this.addBouncer.bind(this)}>
+        <Button color="blue" onClick={this.addBouncer.bind(this)}>
           Add Bouncer
-        </span>
-        <span className={"button"} style={{padding:3}} onClick={this.removeBouncer.bind(this)}>
+        </Button>
+        <Button color="orange" onClick={this.removeBouncer.bind(this)}>
           Remove Bouncer
-        </span>
+        </Button>
         <div>
           {bouncers}
         </div>
@@ -98,6 +99,7 @@ class Owner extends Component {
             this.props.onUpdate(update)
           }}
         />
+        <div style={{width:800,borderBottom:"1px solid #BBBBBB",marginBottom:25,paddingBottom:15}}></div>
         <Events
         config={{hide:false}}
           contract={this.props.contract}

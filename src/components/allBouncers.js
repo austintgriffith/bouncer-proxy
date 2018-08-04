@@ -33,6 +33,10 @@ class allBouncers extends Component {
   }
   render() {
 
+    if(!this.state.contracts){
+      return (<div></div>)
+    }
+
     let contractDisplay = this.state.contracts.map((contract)=>{
       if(contract){
         return (

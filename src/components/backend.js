@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Blockie, Scaler } from "dapparatus"
+import { Blockie, Scaler, Button } from "dapparatus"
 import axios from 'axios';
 
 let pollInterval
@@ -76,9 +76,9 @@ class Backend extends Component {
           <div style={{paddingLeft:20}}>
             {sigs}
           </div>
-          <div className="button" onClick={this.signContract.bind(this)}>
+          <Button size="2" onClick={this.signContract.bind(this)}>
             Sign
-          </div>
+          </Button>
         </Scaler>
       </div>
     );

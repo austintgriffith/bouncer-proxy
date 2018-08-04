@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie } from "dapparatus"
+import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, Button } from "dapparatus"
 import { soliditySha3 } from 'web3-utils';
 import axios from 'axios';
 
@@ -110,10 +110,16 @@ class Bouncer extends Component {
     return (
       <Scaler config={{startZoomAt:700}}>
         <div style={{marginTop:20,marginBottom:300}}>
-          <h3>Example Contract:</h3>
-          Count: {this.state.count}
-          <div className="button" onClick={this.addAmountMeta.bind(this)}>
+          <div style={{width:800,borderBottom:"1px solid #BBBBBB",marginBottom:25,paddingBottom:15}}></div>
+          <div style={{width:800,borderBottom:"1px solid #BBBBBB",marginBottom:25,paddingBottom:15}}>
+          <div>
+          Example Contract Count: {this.state.count}
+          </div>
+          <div>
+          <Button onClick={this.addAmountMeta.bind(this)}>
             meta addAmount(5)
+          </Button>
+          </div>
           </div>
           <div>
             Send
@@ -124,9 +130,9 @@ class Bouncer extends Component {
                 style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
                 type="text" name="toAddress" value={this.state.toAddress} onChange={this.handleInput.bind(this)}
             />
-            <div className="button" onClick={this.sendEther.bind(this)}>
+            <Button onClick={this.sendEther.bind(this)}>
              Send
-            </div>
+            </Button>
           </div>
           <div>
             Send
@@ -140,9 +146,9 @@ class Bouncer extends Component {
                 style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
                 type="text" name="tokenToAddress" value={this.state.tokenToAddress} onChange={this.handleInput.bind(this)}
             />
-            <div className="button" onClick={this.sendToken.bind(this)}>
+            <Button onClick={this.sendToken.bind(this)}>
              Send Token
-            </div>
+            </Button>
 
             <div style={{width:800,borderTop:"1px solid #BBBBBB",marginTop:25,paddingTop:15}}>
             Gas Limit: <input
