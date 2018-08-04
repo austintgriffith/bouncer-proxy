@@ -147,11 +147,11 @@ app.post('/deploy', (req, res) => {
     console.log("current contracts:",contracts)
     if(contracts.indexOf(contractAddress)<0){
       contracts.push(contractAddress)
-      console.log("saving contracts:",contracts)
-      redis.set(deployedContractsKey,JSON.stringify(contracts),'EX', 60 * 60 * 24 * 7);
-      res.set('Content-Type', 'application/json');
-      res.end(JSON.stringify({contract:contractAddress}));
     }
+    console.log("saving contracts:",contracts)
+    redis.set(deployedContractsKey,JSON.stringify(contracts),'EX', 60 * 60 * 24 * 7);
+    res.set('Content-Type', 'application/json');
+    res.end(JSON.stringify({contract:contractAddress}));
   });
 })
 

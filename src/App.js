@@ -127,7 +127,6 @@ class App extends Component {
     }
 
     let mainTitle = ""
-    let allBouncerContracts = ""
     let contractDisplay = ""
     let qr = ""
     let backend = ""
@@ -135,7 +134,8 @@ class App extends Component {
     if(web3 && contracts){
       if(!this.state.address){
         mainTitle = (
-          <div className="titleCenter" style={{marginTop:-50}}>
+          <div className="titleCenter" style={{marginTop:-50,width:"100%"}}>
+            <Scaler config={{origin:"center center"}}>
             <div style={{width:"100%",textAlign:"center",fontSize:150}}>
              metatx.io
             </div>
@@ -152,14 +152,16 @@ class App extends Component {
               DEPLOY
               </Button>
             </div>
+            <div style={{marginTop:150}}>
+              <AllBouncers
+                backendUrl={backendUrl}
+              />
+            </div>
+            </Scaler>
           </div>
 
         )
-        allBouncerContracts = (
-          <AllBouncers
-            backendUrl={backendUrl}
-          />
-        )
+
       }else if(this.state.contract){
 
         qr = (
@@ -235,7 +237,28 @@ class App extends Component {
     }else{
       contractDisplay = (
         <div style={{padding:20}}>
-          Bouncer Proxy needs web3 ---->
+          <div className="titleCenter" style={{marginTop:-50}}>
+            <Scaler config={{origin:"center center"}}>
+            <div style={{width:"100%",textAlign:"center",fontSize:150}}>
+             metatx.io
+            </div>
+            <div style={{width:"100%",textAlign:"center",fontSize:14,marginBottom:20}}>
+             please unlock metamask or mobile web3 provider
+            </div>
+            <div style={{width:"100%",textAlign:"center"}}>
+              <Button size="2" onClick={()=>{
+                window.location = "https://github.com/austintgriffith/bouncer-proxy/blob/master/README.md"
+              }}>
+              LEARN MORE
+              </Button>
+              <Button color="orange" size="2" onClick={()=>{
+                alert("Please unlock Metamask or install web3 or mobile ethereum wallet.")
+              }}>
+              DEPLOY
+              </Button>
+            </div>
+            </Scaler>
+          </div>
         </div>
       )
     }
@@ -246,7 +269,6 @@ class App extends Component {
         {connectedDisplay}
         {events}
         {mainTitle}
-        {allBouncerContracts}
         {contractDisplay}
         {qr}
         {backend}

@@ -22,7 +22,7 @@ class Backend extends Component {
   load(){
     axios.get(this.props.backendUrl+"sigs/"+this.props.address)
     .then((response)=>{
-      console.log(response)
+      //console.log(response)
       this.setState({sigs:response.data})
     })
     .catch((error)=>{
@@ -56,7 +56,7 @@ class Backend extends Component {
   render() {
 
     let sigs = []
-    console.log("this.state.sigs",this.state.sigs)
+    //console.log("this.state.sigs",this.state.sigs)
     if(this.state.sigs){
       sigs = this.state.sigs.map((sig)=>{
         return (

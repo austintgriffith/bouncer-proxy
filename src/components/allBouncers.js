@@ -24,7 +24,7 @@ class allBouncers extends Component {
     let {contracts} = this.props
     axios.get(this.props.backendUrl+"contracts")
     .then((response)=>{
-      console.log("CONTRACTS DEPLOYED:",response)
+      //console.log("CONTRACTS DEPLOYED:",response)
       this.setState({contracts:response.data})
     })
     .catch((error)=>{
@@ -40,20 +40,16 @@ class allBouncers extends Component {
     let contractDisplay = this.state.contracts.map((contract)=>{
       if(contract){
         return (
-          <div><a href={"/"+contract}><Blockie address={contract.toLowerCase()} config={{size:6}}/></a></div>
+          <div key={contract} ><a href={"/"+contract}><Blockie address={contract.toLowerCase()} config={{size:6}}/></a></div>
         )
       }
     })
 
 
     return (
-      <Scaler config={{startZoomAt:700}}>
-        <div style={{marginTop:50,marginLeft:50}}>
-            <StackGrid columnWidth={60}>
-              {contractDisplay}
-            </StackGrid>
-        </div>
-      </Scaler>
+      <StackGrid columnWidth={60}>
+        {contractDisplay}
+      </StackGrid>
     );
   }
 }

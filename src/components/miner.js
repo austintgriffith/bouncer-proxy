@@ -23,7 +23,7 @@ class Bouncer extends Component {
   async load(){
     axios.get(this.props.backendUrl+"miner")
     .then((response)=>{
-      console.log(response)
+      //console.log(response)
       this.setState({address:response.data.address})
     })
     .catch((error)=>{
