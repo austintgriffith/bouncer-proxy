@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "aws": "0.0.3-2",
     "clevis": "0.0.51",
     "cors": "^2.8.4",
     "dapparatus": "^1.0.16",
