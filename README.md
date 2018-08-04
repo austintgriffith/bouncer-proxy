@@ -28,9 +28,15 @@ Meta transactions can be submitted to your [BouncerProxy](https://github.com/aus
 ##  Inspired by:
 
 @avsa - [https://www.youtube.com/watch?v=qF2lhJzngto](https://www.youtube.com/watch?v=qF2lhJzngto)
+
 @mattgcondon - [https://twitter.com/mattgcondon/status/1022287545139449856](https://twitter.com/mattgcondon/status/1022287545139449856) && [https://twitter.com/mattgcondon/status/1021984009428107264](https://twitter.com/mattgcondon/status/1021984009428107264)
+
 @owocki - [https://twitter.com/owocki/status/1021859962882908160](https://twitter.com/owocki/status/1021859962882908160)
+
 @danfinlay - [https://twitter.com/danfinlay/status/1022271384938983424](https://twitter.com/danfinlay/status/1022271384938983424)
+
 @PhABCD - [https://twitter.com/PhABCD/status/1021974772786319361](https://twitter.com/PhABCD/status/1021974772786319361)
+
 [gnosis-safe](https://github.com/gnosis/safe-contracts)
+
 [uport-identity](https://github.com/uport-project/uport-identity)
