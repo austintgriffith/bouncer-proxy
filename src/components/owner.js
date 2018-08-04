@@ -48,6 +48,7 @@ class Owner extends Component {
     console.log("bouncerBlockie2",bouncerBlockie)
     return (
       <div>
+        <Scaler config={{startZoomAt:1000}}>
         <input
           style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
           type="text" name="addBouncer" value={this.props.bouncer} onChange={this.handleBouncer.bind(this)}
@@ -105,6 +106,7 @@ class Owner extends Component {
             //this.setState({roleAddedEvents:allEvents.reverse()})
           }}
         />
+        </Scaler>
       </div>
     );
   }

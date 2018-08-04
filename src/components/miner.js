@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Address } from "dapparatus"
+import { Address, Scaler } from "dapparatus"
 import { soliditySha3 } from 'web3-utils';
 import axios from 'axios';
 
@@ -43,7 +43,9 @@ class Bouncer extends Component {
     }
     return (
       <div style={{marginTop:20,position:"fixed",bottom:10,right:50}}>
-        {address}
+        <Scaler config={{startZoomAt:1000,origin:"1000px 60px"}}>
+          {address}
+        </Scaler>
       </div>
     );
   }

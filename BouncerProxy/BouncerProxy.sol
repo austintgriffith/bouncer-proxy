@@ -67,7 +67,7 @@ contract BouncerProxy is SignatureBouncer {
         //ignore reward, 0 means none
       }else if(rewardToken==address(1)){
         //REWARD ETHER
-        msg.sender.transfer(rewardAmount);
+        msg.sender.call.value(rewardAmount).gas(36000)();
       }else{
         //REWARD TOKEN
         require((StandardToken(rewardToken)).transfer(msg.sender,rewardAmount));

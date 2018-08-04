@@ -120,7 +120,9 @@ class App extends Component {
 
         qr = (
           <div style={{position:"fixed",top:100,right:20}}>
-            <QRCode value={window.location.toString()} />
+              <Scaler config={{startZoomAt:900,origin:"150px 0px"}}>
+                <QRCode value={window.location.toString()} />
+              </Scaler>
           </div>
         )
 
@@ -161,19 +163,21 @@ class App extends Component {
         contractDisplay = (
           <div style={{padding:20}}>
             <Miner backendUrl={backendUrl} {...this.state} />
-            <h2>BouncerProxy</h2>
-            <div>
-              <Address
-                {...this.state}
-                address={this.state.contract._address}
-              />
-            </div>
-            <div>
-              <Address
-                {...this.state}
-                address={this.state.owner}
-              />
-            </div>
+            <Scaler config={{startZoomAt:900}}>
+              <h2>BouncerProxy</h2>
+              <div>
+                <Address
+                  {...this.state}
+                  address={this.state.contract._address}
+                />
+              </div>
+              <div>
+                <Address
+                  {...this.state}
+                  address={this.state.owner}
+                />
+              </div>
+            </Scaler>
             {userDisplay}
           </div>
         )
