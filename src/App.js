@@ -10,6 +10,8 @@ import Miner from "./components/miner.js"
 import QRCode from 'qrcode.react';
 import axios from 'axios';
 
+//const ENS = require('ethjs-ens')
+
 let backendUrl = "http://localhost:10001/"
 console.log("window.location:",window.location)
 if(window.location.href.indexOf("metatx.io")>=0)
@@ -27,7 +29,8 @@ class App extends Component {
      address: window.location.pathname.replace("/",""),
      contract: false,
      owner: "",
-     bouncer: ""
+     bouncer: "",
+     //ens: {},
    }
   }
   deployBouncerProxy() {
@@ -66,7 +69,13 @@ class App extends Component {
           console.log("metamask state update:",state)
           if(state.web3Provider) {
             state.web3 = new Web3(state.web3Provider)
-            this.setState(state)
+            this.setState(state,async ()=>{
+              //let network = await state.web3.eth.net.getId()
+              //console.log("~~~ WEB3 READY NETWORK: ",network)
+              ///let ens = new ENS({ provider:state.web3Provider, network: network })
+              //console.log("SETTING STATE",ens,network)
+              //this.setState({ens:ens,networkId:network})
+            })
           }
         }}
       />

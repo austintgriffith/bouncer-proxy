@@ -32,7 +32,7 @@ class Owner extends Component {
     if(this.state.bouncers){
       bouncers=this.state.bouncers.map((bouncer)=>{
         return (
-          <div>
+          <div key={bouncer}>
             <Blockie address={bouncer} /> {bouncer}
           </div>
         )
