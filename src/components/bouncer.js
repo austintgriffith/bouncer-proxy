@@ -11,7 +11,8 @@ class Bouncer extends Component {
     super(props);
     this.state = {
       count: "loading...",
-      gasLimit: 120000
+      gasLimit: 120000,
+      minBlock: props.block
     }
   }
   handleInput(e){
@@ -35,14 +36,14 @@ class Bouncer extends Component {
     let {contracts,contract,account} = this.props
     var data = contracts.Example.addAmount(5).encodeABI()
     console.log("DATA:",data)
-    this.sendMetaTx(contract._address,account,contracts.Example._address,0,data)
+    this.sendMetaTx(contract._address,account,contracts.Example._address,0,data,this.state.minBlock)
   }
   sendEther(){
     let {contract,account,web3} = this.props
     const wei = web3.utils.toWei(this.state.sendEther+"", 'ether')
     console.log("SENDING WEI:",wei)
     this.setState({sendEther:"",toAddress:""})
-    this.sendMetaTx(contract._address,account,this.state.toAddress,wei,"0x00")
+    this.sendMetaTx(contract._address,account,this.state.toAddress,wei,"0x00",this.state.minBlock)
   }
   async sendToken(){
     let {contracts,contract,account,web3} = this.props
@@ -50,17 +51,18 @@ class Bouncer extends Component {
     console.log("DATA:",data)
     console.log("SENDING ",this.state.sendToken," tokens at address "+this.state.sendTokenAddress+" to address "+this.state.tokenToAddress)
     this.setState({sendToken:"",sendTokenAddress:"",tokenToAddress:""})
-    this.sendMetaTx(contract._address,account,this.state.sendTokenAddress,0,data)
+    this.sendMetaTx(contract._address,account,this.state.sendTokenAddress,0,data,this.state.minBlock)
   }
-  async sendMetaTx(proxyAddress,fromAddress,toAddress,value,txData){
+  async sendMetaTx(proxyAddress,fromAddress,toAddress,value,txData,minBlock){
+    if(!minBlock) minBlock=0
     let {contract,account,web3} = this.props
-    const nonce = await contract.nonce(fromAddress).call()
+    const nonce = await contract.nonce(fromAddress,minBlock).call()
     console.log("Current nonce for "+fromAddress+" is ",nonce)
     let rewardAddress = "0x0000000000000000000000000000000000000000"
     let rewardAmount = 0
     if(this.state.rewardTokenAddress){
-      if(this.state.rewardTokenAddress=="1"||this.state.rewardTokenAddress=="0x0000000000000000000000000000000000000001"){
-        rewardAddress = "0x0000000000000000000000000000000000000001"
+      if(this.state.rewardTokenAddress=="0"||this.state.rewardTokenAddress=="0x0000000000000000000000000000000000000000"){
+        rewardAddress = "0x0000000000000000000000000000000000000000"
         this.setState({rewardTokenAddress:rewardAddress})
         rewardAmount = web3.utils.toWei(this.state.rewardToken+"", 'ether')
         console.log("rewardAmount",rewardAmount)
@@ -80,6 +82,7 @@ class Bouncer extends Component {
       rewardAddress,
       /*web3.utils.toTwosComplement(rewardAmount),*/
       web3.utils.toTwosComplement(rewardAmount),
+      web3.utils.toTwosComplement(minBlock),
       web3.utils.toTwosComplement(nonce),
     ]
     /*web3.utils.padLeft("0x"+nonce,64),*/
@@ -155,6 +158,17 @@ class Bouncer extends Component {
                 style={{verticalAlign:"middle",width:300,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
                 type="text" name="gasLimit" value={this.state.gasLimit} onChange={this.handleInput.bind(this)}
             />
+            </div>
+            <div>
+            Minimum Block: <input
+                style={{verticalAlign:"middle",width:100,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
+                type="text" name="minBlock" value={this.state.minBlock} onChange={this.handleInput.bind(this)}
+            />
+              <input type="button" value="now" onClick={()=>{this.setState({minBlock:this.props.block})}} /> +
+              <input type="button" value="minute" onClick={()=>{this.setState({minBlock:this.state.minBlock+4})}} />
+              <input type="button" value="hour" onClick={()=>{this.setState({minBlock:this.state.minBlock+240})}} />
+              <input type="button" value="day" onClick={()=>{this.setState({minBlock:this.state.minBlock+5760})}} />
+              <input type="button" value="week" onClick={()=>{this.setState({minBlock:this.state.minBlock+40320})}} />
             </div>
             <div>
             Reward:

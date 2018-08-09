@@ -34,6 +34,9 @@ if(!NETWORK){
 }
 console.log("NETWORK:",NETWORK)
 
+let transactionListKey = "transactionList"+NETWORK
+
+
 let redisHost = 'localhost'
 let redisPort = 57300
 if(NETWORK>0&&NETWORK<9){
@@ -66,8 +69,58 @@ checkForGeth()
 function startParsers(){
   web3.eth.getBlockNumber().then((blockNumber)=>{
     //parsers here
+    //
+    //
+
+    setInterval(()=>{
+      console.log("::: TX CHECKER :::: loading transactions from cache...")
+      redis.get(transactionListKey, async (err, result) => {
+        let transactions
+        try{
+          transactions = JSON.parse(result)
+        }catch(e){contracts = []}
+        if(!transactions) transactions = []
+        console.log("current transactions:",transactions.length)
+        for(let t in transactions){
+          console.log("Check Tx:",transactions[t].sig)
+          let contract = new web3.eth.Contract(contracts.BouncerProxy._jsonInterface,transactions[t].parts[0])
+          let ready = await contract.methods.isValidSigAndBlock(transactions[t].sig,transactions[t].parts[1],transactions[t].parts[2],transactions[t].parts[3],transactions[t].parts[4],transactions[t].parts[5],transactions[t].parts[6],transactions[t].parts[7]).call()
+          if(ready){
+            console.log("Transaction is READY ---> ")
+            doTransaction(contract,transactions[t])
+            removeTransaction(transactions[t].sig)
+          }
+        }
+      });
+    },5000)
+
   })
 }
+
+function removeTransaction(sig){
+  redis.get(transactionListKey, function (err, result) {
+    let transactions
+    try{
+      transactions = JSON.parse(result)
+    }catch(e){transactions = []}
+    if(!transactions) transactions = []
+    let newtransactions = []
+    for(let t in transactions){
+      if(transactions[t].sig!=sig){
+        newtransactions.push(transactions[t])
+      }
+    }
+    redis.set(transactionListKey,JSON.stringify(newtransactions),'EX', 60 * 60 * 24 * 7);
+  });
+}
+
+app.get('/clear', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/clear")
+  res.set('Content-Type', 'application/json');
+  res.end(JSON.stringify({hello:"world"}));
+  redis.set(transactionListKey,JSON.stringify([]),'EX', 60 * 60 * 24 * 7);
+});
 
 app.get('/', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -105,6 +158,15 @@ app.get('/contracts', (req, res) => {
     res.end(result);
   })
 
+});
+
+app.get('/transactions', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/transactions")
+  redis.get(transactionListKey, function (err, result) {
+    res.set('Content-Type', 'application/json');
+    res.end(result);
+  })
 });
 
 app.post('/sign', (req, res) => {
@@ -162,40 +224,17 @@ app.post('/tx', (req, res) => {
   console.log("RECOVERED:",account)
   if(account.toLowerCase()==req.body.parts[1].toLowerCase()){
     console.log("Correct sig... relay transaction to contract... might want more filtering here, but just blindly do it for now")
-
-    //console.log(contracts.BouncerProxy)
-    let contract = new web3.eth.Contract(contracts.BouncerProxy._jsonInterface,req.body.parts[0])
-    console.log("Forwarding tx to ",contract._address," with local account ",accounts[3])
-
-    let txparams = {
-      from: accounts[DESKTOPMINERACCOUNT],
-      gas: req.body.gas,
-      gasPrice:Math.round(4 * 1000000000)
-    }
-
-    //const result = await clevis("contract","forward","BouncerProxy",accountIndexSender,sig,accounts[accountIndexSigner],localContractAddress("Example"),"0",data,rewardAddress,reqardAmount)
-    console.log("TX",req.body.sig,req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6])
-    console.log("PARAMS",txparams)
-    contract.methods.forward(req.body.sig,req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6]).send(
-        txparams ,(error, transactionHash)=>{
-          console.log("TX CALLBACK",error,transactionHash)
-        })
-        .on('error',(err,receiptMaybe)=>{
-          console.log("TX ERROR",err,receiptMaybe)
-        })
-        .on('transactionHash',(transactionHash)=>{
-          console.log("TX HASH",transactionHash)
-        })
-        .on('receipt',(receipt)=>{
-          console.log("TX RECEIPT",receipt)
-        })
-        /*.on('confirmation', (confirmations,receipt)=>{
-          console.log("TX CONFIRM",confirmations,receipt)
-        })*/
-        .then((receipt)=>{
-          console.log("TX THEN",receipt)
-        })
-
+    redis.get(transactionListKey, function (err, result) {
+      let transactions
+      try{
+        transactions = JSON.parse(result)
+      }catch(e){contracts = []}
+      if(!transactions) transactions = []
+      console.log("current transactions:",transactions)
+      transactions.push(req.body)
+      console.log("saving transactions:",transactions)
+      redis.set(transactionListKey,JSON.stringify(transactions),'EX', 60 * 60 * 24 * 7);
+    });
   }
   res.set('Content-Type', 'application/json');
   res.end(JSON.stringify({hello:"world"}));
@@ -203,3 +242,38 @@ app.post('/tx', (req, res) => {
 
 app.listen(10001);
 console.log(`http listening on 10001`);
+
+
+function doTransaction(contract,txObject){
+  //console.log(contracts.BouncerProxy)
+
+  console.log("Forwarding tx to ",contract._address," with local account ",accounts[3])
+  let txparams = {
+    from: accounts[DESKTOPMINERACCOUNT],
+    gas: txObject.gas,
+    gasPrice:Math.round(4 * 1000000000)
+  }
+
+  //const result = await clevis("contract","forward","BouncerProxy",accountIndexSender,sig,accounts[accountIndexSigner],localContractAddress("Example"),"0",data,rewardAddress,reqardAmount)
+  console.log("TX",txObject.sig,txObject.parts[1],txObject.parts[2],txObject.parts[3],txObject.parts[4],txObject.parts[5],txObject.parts[6],txObject.parts[7])
+  console.log("PARAMS",txparams)
+  contract.methods.forward(txObject.sig,txObject.parts[1],txObject.parts[2],txObject.parts[3],txObject.parts[4],txObject.parts[5],txObject.parts[6],txObject.parts[7]).send(
+  txparams ,(error, transactionHash)=>{
+    console.log("TX CALLBACK",error,transactionHash)
+  })
+  .on('error',(err,receiptMaybe)=>{
+    console.log("TX ERROR",err,receiptMaybe)
+  })
+  .on('transactionHash',(transactionHash)=>{
+    console.log("TX HASH",transactionHash)
+  })
+  .on('receipt',(receipt)=>{
+    console.log("TX RECEIPT",receipt)
+  })
+  /*.on('confirmation', (confirmations,receipt)=>{
+    console.log("TX CONFIRM",confirmations,receipt)
+  })*/
+  .then((receipt)=>{
+    console.log("TX THEN",receipt)
+  })
+}

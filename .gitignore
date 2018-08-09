@@ -1,3 +1,4 @@
+public/reload.txt
 src/contracts/*
 deploy.network
 aws.json
