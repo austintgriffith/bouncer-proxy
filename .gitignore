@@ -1,4 +1,5 @@
 src/contracts/*
+public/reload.txt
 deploy.network
 aws.json
 backend/redisdata
