@@ -36,6 +36,8 @@ console.log("NETWORK:",NETWORK)
 
 let transactionListKey = "transactionList"+NETWORK
 
+let subscriptionListKey = "subscriptionList"+NETWORK
+
 
 let redisHost = 'localhost'
 let redisPort = 57300
@@ -49,7 +51,7 @@ let redis = new Redis({
 })
 
 console.log("LOADING CONTRACTS")
-contracts = ContractLoader(["BouncerProxy","Example"],web3);
+contracts = ContractLoader(["BouncerProxy","Example","SomeStableToken","Subscription"],web3);
 
 
 
@@ -94,6 +96,43 @@ function startParsers(){
       });
     },5000)
 
+    setInterval(()=>{
+      console.log("::: SUBSCRIPTION CHECKER :::: loading subscriptions from cache...")
+      redis.get(subscriptionListKey, async (err, result) => {
+        let subscriptions
+        try{
+          subscriptions = JSON.parse(result)
+        }catch(e){contracts = []}
+        if(!subscriptions) subscriptions = []
+        console.log("current subscriptions:",subscriptions.length)
+        for(let t in subscriptions){
+          console.log("Check Sub Signature:",subscriptions[t].signature)
+          let contract = new web3.eth.Contract(contracts.Subscription._jsonInterface,subscriptions[t].subscriptionContract)
+          let doubleCheckHash = await contract.methods.getSubscriptionHash(subscriptions[t].parts[0],subscriptions[t].parts[1],subscriptions[t].parts[2],subscriptions[t].parts[3],subscriptions[t].parts[4],subscriptions[t].parts[5],subscriptions[t].parts[6],subscriptions[t].parts[7]).call()
+          //console.log(subscriptions[t].parts[0],subscriptions[t].parts[1],subscriptions[t].parts[2],subscriptions[t].parts[3],subscriptions[t].parts[4],subscriptions[t].parts[5],subscriptions[t].parts[6],subscriptions[t].parts[7],subscriptions[t].signature)
+          let ready = await contract.methods.isSubscriptionReady(subscriptions[t].parts[0],subscriptions[t].parts[1],subscriptions[t].parts[2],subscriptions[t].parts[3],subscriptions[t].parts[4],subscriptions[t].parts[5],subscriptions[t].parts[6],subscriptions[t].parts[7],subscriptions[t].signature).call()
+          if(ready){
+            console.log("subscription says it's ready... try a dry run ---> ")
+            //let dryRun = false
+            //try{
+            //  dryRun = await contract.methods.executeSubscription(subscriptions[t].parts[0],subscriptions[t].parts[1],subscriptions[t].parts[2],subscriptions[t].parts[3],subscriptions[t].parts[4],subscriptions[t].parts[5],subscriptions[t].parts[6],subscriptions[t].parts[7],subscriptions[t].signature).call()
+            //}catch(e){
+            //  console.log(e.toString())
+            //}
+            //if(dryRun){
+              doSubscription(contract,subscriptions[t])
+            //}else{
+            //  console.log("Even though it says it's ready, the dry run failed. Probably a gas issue... as in the contract is out of Eth or unable to pay the gasPayer can't pay the gasToken")
+            //}
+          }else{
+            //removesubscription(subscriptions[t].sig)
+            console.log("--- not ready -- since they never get removed you may want to figure out a way to trash expired or paused and then add them back when they go active again---")
+          }
+        }
+      });
+    },4500)
+
+
   })
 }
 
@@ -114,13 +153,34 @@ function removeTransaction(sig){
   });
 }
 
+
+function removeSubscription(sig){
+  redis.get(subscriptionListKey, function (err, result) {
+    let subscriptions
+    try{
+      subscriptions = JSON.parse(result)
+    }catch(e){subscriptions = []}
+    if(!subscriptions) subscriptions = []
+    let newSubscriptions = []
+    for(let t in subscriptions){
+      if(subscriptions[t].sig!=sig){
+        newSubscriptions.push(subscriptions[t])
+      }
+    }
+    redis.set(subscriptionListKey,JSON.stringify(newSubscriptions),'EX', 60 * 60 * 24 * 7);
+  });
+}
+
 app.get('/clear', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   console.log("/clear")
   res.set('Content-Type', 'application/json');
   res.end(JSON.stringify({hello:"world"}));
   redis.set(transactionListKey,JSON.stringify([]),'EX', 60 * 60 * 24 * 7);
+  redis.set(subscriptionListKey,JSON.stringify([]),'EX', 60 * 60 * 24 * 7);
 });
+
+
 
 app.get('/', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -160,6 +220,17 @@ app.get('/contracts', (req, res) => {
 
 });
 
+app.get('/subcontracts', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/subcontracts")
+  let deployedSubContractsKey = "deployedsubcontracts"+NETWORK
+  redis.get(deployedSubContractsKey, function (err, result) {
+    res.set('Content-Type', 'application/json');
+    res.end(result);
+  })
+
+});
+
 app.get('/transactions', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   console.log("/transactions")
@@ -168,6 +239,17 @@ app.get('/transactions', (req, res) => {
     res.end(result);
   })
 });
+
+
+app.get('/subscriptions', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/subscriptions")
+  redis.get(subscriptionListKey, function (err, result) {
+    res.set('Content-Type', 'application/json');
+    res.end(result);
+  })
+});
+
 
 app.post('/sign', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -217,6 +299,29 @@ app.post('/deploy', (req, res) => {
   });
 })
 
+
+app.post('/deploysub', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/deploy",req.body)
+  let contractAddress = req.body.contractAddress
+  let deployedSubContractsKey = "deployedsubcontracts"+NETWORK
+  redis.get(deployedSubContractsKey, function (err, result) {
+    let contracts
+    try{
+      contracts = JSON.parse(result)
+    }catch(e){contracts = []}
+    if(!contracts) contracts = []
+    console.log("current contracts:",contracts)
+    if(contracts.indexOf(contractAddress)<0){
+      contracts.push(contractAddress)
+    }
+    console.log("saving contracts:",contracts)
+    redis.set(deployedSubContractsKey,JSON.stringify(contracts),'EX', 60 * 60 * 24 * 7);
+    res.set('Content-Type', 'application/json');
+    res.end(JSON.stringify({contract:contractAddress}));
+  });
+})
+
 app.post('/tx', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   console.log("/tx",req.body)
@@ -234,6 +339,29 @@ app.post('/tx', (req, res) => {
       transactions.push(req.body)
       console.log("saving transactions:",transactions)
       redis.set(transactionListKey,JSON.stringify(transactions),'EX', 60 * 60 * 24 * 7);
+    });
+  }
+  res.set('Content-Type', 'application/json');
+  res.end(JSON.stringify({hello:"world"}));
+});
+
+app.post('/saveSubscription', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/saveSubscription",req.body)
+  let account = web3.eth.accounts.recover(req.body.subscriptionHash,req.body.signature)
+  console.log("RECOVERED:",account)
+  if(account.toLowerCase()==req.body.parts[0].toLowerCase()){
+    console.log("Correct sig... relay subscription to contract... might want more filtering here, but just blindly do it for now")
+    redis.get(subscriptionListKey, function (err, result) {
+      let subscriptions
+      try{
+        subscriptions = JSON.parse(result)
+      }catch(e){contracts = []}
+      if(!subscriptions) subscriptions = []
+      console.log("current subscriptions:",subscriptions)
+      subscriptions.push(req.body)
+      console.log("saving subscriptions:",subscriptions)
+      redis.set(subscriptionListKey,JSON.stringify(subscriptions),'EX', 60 * 60 * 24 * 7);
     });
   }
   res.set('Content-Type', 'application/json');
@@ -266,6 +394,42 @@ function doTransaction(contract,txObject){
   })
   .on('transactionHash',(transactionHash)=>{
     console.log("TX HASH",transactionHash)
+  })
+  .on('receipt',(receipt)=>{
+    console.log("TX RECEIPT",receipt)
+  })
+  /*.on('confirmation', (confirmations,receipt)=>{
+    console.log("TX CONFIRM",confirmations,receipt)
+  })*/
+  .then((receipt)=>{
+    console.log("TX THEN",receipt)
+  })
+}
+
+
+
+function doSubscription(contract,subscriptionObject){
+  //console.log(contracts.BouncerProxy)
+
+  console.log("Running subscription on contract ",contract._address," with local account ",accounts[3])
+  let txparams = {
+    from: accounts[DESKTOPMINERACCOUNT],
+    gas: 1000000,
+    gasPrice:Math.round(4 * 1000000000)
+  }
+
+  //const result = await clevis("contract","forward","BouncerProxy",accountIndexSender,sig,accounts[accountIndexSigner],localContractAddress("Example"),"0",data,rewardAddress,reqardAmount)
+  console.log("subscriptionObject",subscriptionObject.parts[0],subscriptionObject.parts[1],subscriptionObject.parts[2],subscriptionObject.parts[3],subscriptionObject.parts[4],subscriptionObject.parts[5],subscriptionObject.parts[6],subscriptionObject.parts[7],subscriptionObject.signature)
+  console.log("PARAMS",txparams)
+  contract.methods.executeSubscription(subscriptionObject.parts[0],subscriptionObject.parts[1],subscriptionObject.parts[2],subscriptionObject.parts[3],subscriptionObject.parts[4],subscriptionObject.parts[5],subscriptionObject.parts[6],subscriptionObject.parts[7],subscriptionObject.signature).send(
+  txparams ,(error, Hash)=>{
+    console.log("TX CALLBACK",error,Hash)
+  })
+  .on('error',(err,receiptMaybe)=>{
+    console.log("TX ERROR",err,receiptMaybe)
+  })
+  .on('subscriptionHash',(subscriptionHash)=>{
+    console.log("TX HASH",subscriptionHash)
   })
   .on('receipt',(receipt)=>{
     console.log("TX RECEIPT",receipt)

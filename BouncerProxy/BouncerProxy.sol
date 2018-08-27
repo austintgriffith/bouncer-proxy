@@ -25,13 +25,12 @@ pragma solidity ^0.4.24;
 */
 
 //new use case: something very similar to the eth alarm clock dudes
-// gitcoin wants to run a subscription like service and have all the trasacions
-// run as meta trasactions so accounts don't have to worry about getting on at
+// gitcoin wants to run a subscription like service and have all the transactions
+// run as meta transactions so accounts don't have to worry about getting on at
 // a certain time to push a tx through every month, week, day, hour, etc
 // we'll use a minBlock requirement and have a nonce for each minBlock so
 // other transactions can still come through normally with minBlock=0 but
 // you also want to avoid replay attacks for specific minBlocks
-
 
 //use case 1:
 //you deploy the bouncer proxy and use it as a standard identity for your own etherless accounts
