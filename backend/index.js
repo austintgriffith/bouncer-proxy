@@ -70,11 +70,13 @@ checkForGeth()
 
 function startParsers(){
   web3.eth.getBlockNumber().then((blockNumber)=>{
+
+      console.log("web3.txpool",web3.txpool)
+
     //parsers here
     //
     //
-
-    setInterval(()=>{
+   setInterval(()=>{
       console.log("::: TX CHECKER :::: loading transactions from cache...")
       redis.get(transactionListKey, async (err, result) => {
         let transactions
@@ -98,6 +100,9 @@ function startParsers(){
 
     setInterval(()=>{
       console.log("::: SUBSCRIPTION CHECKER :::: loading subscriptions from cache...")
+
+
+
       redis.get(subscriptionListKey, async (err, result) => {
         let subscriptions
         try{
@@ -108,11 +113,13 @@ function startParsers(){
         for(let t in subscriptions){
           console.log("Check Sub Signature:",subscriptions[t].signature)
           let contract = new web3.eth.Contract(contracts.Subscription._jsonInterface,subscriptions[t].subscriptionContract)
+          console.log("loading hash...")
           let doubleCheckHash = await contract.methods.getSubscriptionHash(subscriptions[t].parts[0],subscriptions[t].parts[1],subscriptions[t].parts[2],subscriptions[t].parts[3],subscriptions[t].parts[4],subscriptions[t].parts[5],subscriptions[t].parts[6],subscriptions[t].parts[7]).call()
-          //console.log(subscriptions[t].parts[0],subscriptions[t].parts[1],subscriptions[t].parts[2],subscriptions[t].parts[3],subscriptions[t].parts[4],subscriptions[t].parts[5],subscriptions[t].parts[6],subscriptions[t].parts[7],subscriptions[t].signature)
+          console.log("checking if ready...")
           let ready = await contract.methods.isSubscriptionReady(subscriptions[t].parts[0],subscriptions[t].parts[1],subscriptions[t].parts[2],subscriptions[t].parts[3],subscriptions[t].parts[4],subscriptions[t].parts[5],subscriptions[t].parts[6],subscriptions[t].parts[7],subscriptions[t].signature).call()
+          console.log("READY:",ready)
           if(ready){
-            console.log("subscription says it's ready... try a dry run ---> ")
+            console.log("subscription says it's ready...........")
             //let dryRun = false
             //try{
             //  dryRun = await contract.methods.executeSubscription(subscriptions[t].parts[0],subscriptions[t].parts[1],subscriptions[t].parts[2],subscriptions[t].parts[3],subscriptions[t].parts[4],subscriptions[t].parts[5],subscriptions[t].parts[6],subscriptions[t].parts[7],subscriptions[t].signature).call()
@@ -120,7 +127,7 @@ function startParsers(){
             //  console.log(e.toString())
             //}
             //if(dryRun){
-              doSubscription(contract,subscriptions[t])
+            doSubscription(contract,subscriptions[t])
             //}else{
             //  console.log("Even though it says it's ready, the dry run failed. Probably a gas issue... as in the contract is out of Eth or unable to pay the gasPayer can't pay the gasToken")
             //}
@@ -130,7 +137,7 @@ function startParsers(){
           }
         }
       });
-    },4500)
+    },10000)
 
 
   })
@@ -411,7 +418,7 @@ function doTransaction(contract,txObject){
 function doSubscription(contract,subscriptionObject){
   //console.log(contracts.BouncerProxy)
 
-  console.log("Running subscription on contract ",contract._address," with local account ",accounts[3])
+  console.log("!!!!!!!!!!!!!!!!!!!        ------------ Running subscription on contract ",contract._address," with local account ",accounts[3])
   let txparams = {
     from: accounts[DESKTOPMINERACCOUNT],
     gas: 1000000,
@@ -421,6 +428,7 @@ function doSubscription(contract,subscriptionObject){
   //const result = await clevis("contract","forward","BouncerProxy",accountIndexSender,sig,accounts[accountIndexSigner],localContractAddress("Example"),"0",data,rewardAddress,reqardAmount)
   console.log("subscriptionObject",subscriptionObject.parts[0],subscriptionObject.parts[1],subscriptionObject.parts[2],subscriptionObject.parts[3],subscriptionObject.parts[4],subscriptionObject.parts[5],subscriptionObject.parts[6],subscriptionObject.parts[7],subscriptionObject.signature)
   console.log("PARAMS",txparams)
+  console.log("---========= EXEC ===========-----")
   contract.methods.executeSubscription(subscriptionObject.parts[0],subscriptionObject.parts[1],subscriptionObject.parts[2],subscriptionObject.parts[3],subscriptionObject.parts[4],subscriptionObject.parts[5],subscriptionObject.parts[6],subscriptionObject.parts[7],subscriptionObject.signature).send(
   txparams ,(error, Hash)=>{
     console.log("TX CALLBACK",error,Hash)
