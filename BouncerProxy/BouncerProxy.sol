@@ -60,8 +60,10 @@ contract BouncerProxy {
   function updateWhitelist(address _account, bool _value) public returns(bool) {
    require(whitelist[msg.sender],"BouncerProxy::updateWhitelist Account Not Whitelisted");
    whitelist[_account] = _value;
+   UpdateWhitelist(_account,_value);
    return true;
   }
+  event UpdateWhitelist(address _account, bool _value);
   // copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
   function () public payable { emit Received(msg.sender, msg.value); }
   event Received (address indexed sender, uint value);
@@ -70,7 +72,7 @@ contract BouncerProxy {
       //the hash contains all of the information about the meta transaction to be called
       bytes32 _hash = keccak256(abi.encodePacked(address(this), signer, destination, value, data, rewardToken, rewardAmount, nonce[signer]++));
       //this makes sure signer signed correctly AND signer is a valid bouncer
-      require(signerIsWhitelisted(_hash,sig));
+      require(signerIsWhitelisted(_hash,sig),"BouncerProxy::forward Signer is not whitelisted");
       //make sure the signer pays in whatever token (or ether) the sender and signer agreed to
       // or skip this if the sender is incentivized in other ways and there is no need for a token
       if(rewardAmount>0){

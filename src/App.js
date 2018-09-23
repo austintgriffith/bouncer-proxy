@@ -87,8 +87,10 @@ class App extends Component {
                 if(this.state.address){
                   console.log("Loading dyamic contract "+this.state.address)
                   let dynamicContract = customLoader("BouncerProxy",this.state.address)//new this.state.web3.eth.Contract(require("./contracts/BouncerProxy.abi.js"),this.state.address)
-                  let owner = await dynamicContract.owner().call()
-                  this.setState({contract:dynamicContract,owner:owner})
+                  console.log("Checking to see if "+this.state.account+" is whitelisted in contract",dynamicContract)
+                  let whitelisted = await dynamicContract.whitelist(this.state.account).call()
+                  console.log("whitelisted:",whitelisted)
+                  this.setState({contract:dynamicContract,whitelisted:whitelisted})
                 }
               })
             }}
@@ -186,7 +188,7 @@ class App extends Component {
         )
 
         let userDisplay = ""
-        if(this.state.owner.toLowerCase()==this.state.account.toLowerCase()){
+        if(this.state.whitelisted){
 
           userDisplay = (
             <div>
@@ -211,6 +213,12 @@ class App extends Component {
           )
         }
 
+        let whitelisted = ""
+        console.log("WHITELISTED",this.state.whitelisted)
+        if(this.state.whitelisted){
+          whitelisted = "(You are whitelisted to transact through this contract)"
+        }
+
         contractDisplay = (
           <div style={{padding:20}}>
             <Miner backendUrl={backendUrl} {...this.state} />
@@ -221,12 +229,7 @@ class App extends Component {
                   {...this.state}
                   address={this.state.contract._address}
                 />
-              </div>
-              <div>
-                <Address
-                  {...this.state}
-                  address={this.state.owner}
-                />
+                {whitelisted}
               </div>
             </Scaler>
             {userDisplay}

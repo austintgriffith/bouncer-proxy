@@ -17,14 +17,14 @@ class Owner extends Component {
   addBouncer(){
     let {tx,contract} = this.props
     console.log("Add Bouncer ",this.props.bouncer)
-    tx(contract.addBouncer(this.props.bouncer),55000,(receipt)=>{
+    tx(contract.updateWhitelist(this.props.bouncer,true),55000,(receipt)=>{
       console.log("~~~~ BOUNCER ADDED:",receipt)
     })
   }
   removeBouncer(){
     let {tx,contract} = this.props
     console.log("Remove Bouncer ",this.props.bouncer)
-    tx(contract.removeBouncer(this.props.bouncer),55000)
+    tx(contract.updateWhitelist(this.props.bouncer,false),55000)
   }
   render() {
 
@@ -71,30 +71,12 @@ class Owner extends Component {
         <Events
         config={{hide:false,DEBUG:true}}
           contract={this.props.contract}
-          eventName={"RoleAdded"}
+          eventName={"UpdateWhitelist"}
           block={this.props.block}
           onUpdate={(eventData,allEvents)=>{
-            console.log("RoleAdded",eventData)
-            this.state.bouncers.push(eventData.operator.toLowerCase())
+            console.log("UpdateWhitelist",eventData)
+            this.state.bouncers.push(eventData._account.toLowerCase())
             let update = {bouncers:this.state.bouncers}
-            this.setState(update)
-            this.props.onUpdate(update)
-          }}
-        />
-        <Events
-        config={{hide:false,DEBUG:true}}
-          contract={this.props.contract}
-          eventName={"RoleRemoved"}
-          block={this.props.block}
-          onUpdate={(eventData,allEvents)=>{
-            console.log("RoleRemoved",eventData)
-            let newBouncers = []
-            for(let b in this.state.bouncers){
-              if(this.state.bouncers[b]!=eventData.operator.toLowerCase()){
-                newBouncers.push(this.state.bouncers[b])
-              }
-            }
-            let update = {bouncers:newBouncers}
             this.setState(update)
             this.props.onUpdate(update)
           }}
