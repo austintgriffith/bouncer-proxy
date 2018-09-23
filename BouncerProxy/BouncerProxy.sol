@@ -47,30 +47,41 @@ pragma solidity ^0.4.24;
 //  (multiple developer accounts will need to be added as Bouncers to 'whitelist' them to make meta transactions)
 //you run your own relayer and pay for all of their transactions, revoking any bad actors if needed
 
-import "openzeppelin-solidity/contracts/access/SignatureBouncer.sol";
-contract BouncerProxy is SignatureBouncer {
-  constructor() public { }
+contract BouncerProxy {
+  //whitelist the deployer so they can whitelist others
+  constructor() public {
+     whitelist[msg.sender] = true;
+  }
   //to avoid replay
   mapping(address => uint) public nonce;
+  // allow for third party metatx account to make transactions through this
+  // contract like an identity but make sure the owner has whitelisted the tx
+  mapping(address => bool) public whitelist;
+  function updateWhitelist(address _account, bool _value) public returns(bool) {
+   require(whitelist[msg.sender],"BouncerProxy::updateWhitelist Account Not Whitelisted");
+   whitelist[_account] = _value;
+   return true;
+  }
   // copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
-  function () payable { emit Received(msg.sender, msg.value); }
+  function () public payable { emit Received(msg.sender, msg.value); }
   event Received (address indexed sender, uint value);
   // original forward function copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
   function forward(bytes sig, address signer, address destination, uint value, bytes data, address rewardToken, uint rewardAmount) public {
       //the hash contains all of the information about the meta transaction to be called
       bytes32 _hash = keccak256(abi.encodePacked(address(this), signer, destination, value, data, rewardToken, rewardAmount, nonce[signer]++));
       //this makes sure signer signed correctly AND signer is a valid bouncer
-      require(isValidDataHash(_hash,sig));
+      require(signerIsWhitelisted(_hash,sig));
       //make sure the signer pays in whatever token (or ether) the sender and signer agreed to
       // or skip this if the sender is incentivized in other ways and there is no need for a token
-      if(rewardToken==address(0)){
-        //ignore reward, 0 means none
-      }else if(rewardToken==address(1)){
-        //REWARD ETHER
-        require(msg.sender.call.value(rewardAmount).gas(36000)());
-      }else{
-        //REWARD TOKEN
-        require((StandardToken(rewardToken)).transfer(msg.sender,rewardAmount));
+      if(rewardAmount>0){
+        //Address 0 mean reward with ETH
+        if(rewardToken==address(0)){
+          //REWARD ETHER
+          require(msg.sender.call.value(rewardAmount).gas(36000)());
+        }else{
+          //REWARD TOKEN
+          require((StandardToken(rewardToken)).transfer(msg.sender,rewardAmount));
+        }
       }
       //execute the transaction with all the given parameters
       require(executeCall(destination, value, data));
@@ -85,6 +96,40 @@ contract BouncerProxy is SignatureBouncer {
   function executeCall(address to, uint256 value, bytes data) internal returns (bool success) {
     assembly {
        success := call(gas, to, value, add(data, 0x20), mload(data), 0, 0)
+    }
+  }
+
+  //borrowed from OpenZeppelin's ESDA stuff:
+  //https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/cryptography/ECDSA.sol
+  function signerIsWhitelisted(bytes32 _hash, bytes _signature) internal view returns (bool){
+    bytes32 r;
+    bytes32 s;
+    uint8 v;
+    // Check the signature length
+    if (_signature.length != 65) {
+      return false;
+    }
+    // Divide the signature in r, s and v variables
+    // ecrecover takes the signature parameters, and the only way to get them
+    // currently is to use assembly.
+    // solium-disable-next-line security/no-inline-assembly
+    assembly {
+      r := mload(add(_signature, 32))
+      s := mload(add(_signature, 64))
+      v := byte(0, mload(add(_signature, 96)))
+    }
+    // Version of signature should be 27 or 28, but 0 and 1 are also possible versions
+    if (v < 27) {
+      v += 27;
+    }
+    // If the version is correct return the signer address
+    if (v != 27 && v != 28) {
+      return false;
+    } else {
+      // solium-disable-next-line arg-overflow
+      return whitelist[ecrecover(keccak256(
+        abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash)
+      ), v, r, s)];
     }
   }
 }
