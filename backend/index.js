@@ -155,7 +155,21 @@ app.post('/deploy', (req, res) => {
   });
 })
 
-app.post('/tx', (req, res) => {
+let txsKey = "txs"
+
+app.get('/tx/:hash', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/tx/"+req.params.hash)
+
+  redis.get(txsKey, function (err, result) {
+    res.set('Content-Type', 'application/json');
+    res.end(result);
+  })
+
+});
+
+
+app.post('/tx', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   console.log("/tx",req.body)
   let account = web3.eth.accounts.recover(req.body.message,req.body.sig)
@@ -172,13 +186,16 @@ app.post('/tx', (req, res) => {
       gas: req.body.gas,
       gasPrice:Math.round(4 * 1000000000)
     }
-
+    //first get the hash to see if there is already a tx in motion
+    let hash = await contract.methods.getHash(req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6]).call()
+    console.log("HASH:",hash)
     //const result = await clevis("contract","forward","BouncerProxy",accountIndexSender,sig,accounts[accountIndexSigner],localContractAddress("Example"),"0",data,rewardAddress,reqardAmount)
     console.log("TX",req.body.sig,req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6])
     console.log("PARAMS",txparams)
     contract.methods.forward(req.body.sig,req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6]).send(
         txparams ,(error, transactionHash)=>{
           console.log("TX CALLBACK",error,transactionHash)
+          //currentTransactions.push({hash:transactionHash,time:Date.now(),addedFromCallback:1})
         })
         .on('error',(err,receiptMaybe)=>{
           console.log("TX ERROR",err,receiptMaybe)

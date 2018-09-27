@@ -67,10 +67,18 @@ contract BouncerProxy {
   // copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
   function () public payable { emit Received(msg.sender, msg.value); }
   event Received (address indexed sender, uint value);
+
+  function getHash(address signer, address destination, uint value, bytes data, address rewardToken, uint rewardAmount) public view returns(bytes32){
+    return keccak256(abi.encodePacked(address(this), signer, destination, value, data, rewardToken, rewardAmount, nonce[signer]));
+  }
+
+
   // original forward function copied from https://github.com/uport-project/uport-identity/blob/develop/contracts/Proxy.sol
   function forward(bytes sig, address signer, address destination, uint value, bytes data, address rewardToken, uint rewardAmount) public {
       //the hash contains all of the information about the meta transaction to be called
-      bytes32 _hash = keccak256(abi.encodePacked(address(this), signer, destination, value, data, rewardToken, rewardAmount, nonce[signer]++));
+      bytes32 _hash = getHash(signer, destination, value, data, rewardToken, rewardAmount);
+      //increment the hash so this tx can't run again
+      nonce[signer]++;
       //this makes sure signer signed correctly AND signer is a valid bouncer
       require(signerIsWhitelisted(_hash,sig),"BouncerProxy::forward Signer is not whitelisted");
       //make sure the signer pays in whatever token (or ether) the sender and signer agreed to
