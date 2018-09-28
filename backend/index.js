@@ -157,17 +157,28 @@ app.post('/deploy', (req, res) => {
 
 let txsKey = "txs"
 
-app.get('/tx/:hash', (req, res) => {
+app.get('/txs/:account', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  console.log("/tx/"+req.params.hash)
-
-  redis.get(txsKey, function (err, result) {
+  console.log("/txs/"+req.params.account)
+  let thisTxsKey = txsKey+req.params.account.toLowerCase()
+  console.log("Getting Transactions for ",thisTxsKey)
+  redis.get(thisTxsKey, function (err, result) {
     res.set('Content-Type', 'application/json');
     res.end(result);
   })
-
 });
 
+let txHashkey = "tx"
+app.get('/tx/:hash', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  console.log("/tx/"+req.params.hash)
+  let thisTxsKey = txHashkey+req.params.hash.toLowerCase()
+  console.log("Getting Transaction with hash ",thisTxsKey)
+  redis.get(thisTxsKey, function (err, result) {
+    res.set('Content-Type', 'application/json');
+    res.end(result);
+  })
+});
 
 app.post('/tx', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -189,14 +200,44 @@ app.post('/tx', async (req, res) => {
     //first get the hash to see if there is already a tx in motion
     let hash = await contract.methods.getHash(req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6]).call()
     console.log("HASH:",hash)
-    //const result = await clevis("contract","forward","BouncerProxy",accountIndexSender,sig,accounts[accountIndexSigner],localContractAddress("Example"),"0",data,rewardAddress,reqardAmount)
-    console.log("TX",req.body.sig,req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6])
-    console.log("PARAMS",txparams)
-    contract.methods.forward(req.body.sig,req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6]).send(
-        txparams ,(error, transactionHash)=>{
-          console.log("TX CALLBACK",error,transactionHash)
-          //currentTransactions.push({hash:transactionHash,time:Date.now(),addedFromCallback:1})
-        })
+
+    let thisTxHashkey = txHashkey+hash.toLowerCase()
+
+    console.log("Checking centralized db for collision before mining....")
+    let thisTxsKey = txHashkey+hash.toLowerCase()
+    console.log("Getting Transaction with hash ",thisTxsKey)
+    redis.get(thisTxsKey, function (err, result) {
+      if(result){
+        console.log("FOUND EXISTING TX",result)
+      }else{
+        console.log("NO EXISTING TX, DOING TX")
+        //const result = await clevis("contract","forward","BouncerProxy",accountIndexSender,sig,accounts[accountIndexSigner],localContractAddress("Example"),"0",data,rewardAddress,reqardAmount)
+        console.log("TX",req.body.sig,req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6])
+        console.log("PARAMS",txparams)
+        contract.methods.forward(req.body.sig,req.body.parts[1],req.body.parts[2],req.body.parts[3],req.body.parts[4],req.body.parts[5],req.body.parts[6]).send(
+          txparams ,(error, transactionHash)=>{
+            console.log("TX CALLBACK",error,transactionHash)
+            //currentTransactions.push({hash:transactionHash,time:Date.now(),addedFromCallback:1})
+            let thisTxsKey = txsKey+req.body.parts[1].toLowerCase()
+            redis.get(thisTxsKey, function (err, result) {
+              let transactions
+              try{
+                transactions = JSON.parse(result)
+              }catch(e){transactions = []}
+              if(!transactions) transactions = []
+              console.log("current transactions:",transactions)
+              if(transactions.indexOf(transactions)<0){
+                transactions.push({hash:transactionHash,time:Date.now(),metatx:true,miner:accounts[DESKTOPMINERACCOUNT]})
+              }
+              console.log("saving transactions for "+txsKey+req.body.parts[1]+":",transactions)
+              redis.set(thisTxsKey,JSON.stringify(transactions),'EX', 60 * 60 * 24 * 7);
+
+
+              //write tx hash also
+              redis.set(thisTxHashkey,transactionHash,'EX', 60 * 60 * 24 * 7);
+            })
+          }
+        )
         .on('error',(err,receiptMaybe)=>{
           console.log("TX ERROR",err,receiptMaybe)
         })
@@ -212,7 +253,8 @@ app.post('/tx', async (req, res) => {
         .then((receipt)=>{
           console.log("TX THEN",receipt)
         })
-
+      }
+    })
   }
   res.set('Content-Type', 'application/json');
   res.end(JSON.stringify({hello:"world"}));
