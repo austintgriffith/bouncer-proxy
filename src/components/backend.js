@@ -13,13 +13,26 @@ class Backend extends Component {
     }
   }
   componentDidMount(){
-    pollInterval = setInterval(this.load.bind(this),pollTime)
-    this.load()
+  //  pollInterval = setInterval(this.load.bind(this),pollTime)
+  //  this.load()
+  //
+
+
+    this.props.ipfsSigs.on('message', async (message) => {
+
+      let data = JSON.parse(message.data)
+      console.log(data)
+      this.state.sigs.push(data)
+      this.setState({sigs:this.state.sigs},()=>{
+        console.log("SIGS",this.state.sigs)
+      })
+    })
+
   }
   componentWillUnmount(){
-    clearInterval(pollInterval)
+  //  clearInterval(pollInterval)
   }
-  load(){
+  /*load(){
     axios.get(this.props.backendUrl+"sigs/"+this.props.address)
     .then((response)=>{
       //console.log(response)
@@ -28,7 +41,7 @@ class Backend extends Component {
     .catch((error)=>{
       console.log(error);
     });
-  }
+  }*/
   async signContract() {
     let timestamp = Date.now()
     let message = ""+this.props.account+" trusts bouncer proxy "+this.props.address+" at "+timestamp
@@ -42,24 +55,17 @@ class Backend extends Component {
       message:message,
       sig:sig
     })
-    axios.post(this.props.backendUrl+'sign', data, {
-      headers: {
-          'Content-Type': 'application/json',
-      }
-    }).then((response)=>{
-      console.log("SIGN SIG",response)
-    })
-    .catch((error)=>{
-      console.log(error);
-    });
+    console.log("BROADCASTING",data)
+    this.props.ipfsSigs.broadcast(data)
   }
   render() {
 
     let sigs = []
     //console.log("this.state.sigs",this.state.sigs)
     if(this.state.sigs){
-      sigs = this.state.sigs.map((sig)=>{
-        return (
+      for(let s in this.state.sigs){
+        let sig = this.state.sigs[s].account
+        sigs.push(
           <span key={"sig"+sig} style={{padding:3,cursor:"pointer"}} onClick={()=>{
             console.log("updateBouncer",sig)
             this.props.updateBouncer(sig)
@@ -67,7 +73,7 @@ class Backend extends Component {
             <Blockie address={sig} config={{size:5}} />
           </span>
         )
-      })
+      }
     }
 
     return (

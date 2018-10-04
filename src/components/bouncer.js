@@ -3,6 +3,7 @@ import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, B
 import { soliditySha3 } from 'web3-utils';
 import axios from 'axios';
 
+
 let pollInterval
 let pollTime = 509
 
@@ -95,7 +96,7 @@ class Bouncer extends Component {
       parts:parts,
       sig:sig,
     }
-    axios.post(this.props.backendUrl+'tx', postData, {
+    /*axios.post(this.props.backendUrl+'tx', postData, {
       headers: {
           'Content-Type': 'application/json',
       }
@@ -104,7 +105,9 @@ class Bouncer extends Component {
     })
     .catch((error)=>{
       console.log(error);
-    });
+    });*/
+    console.log("broadcast",postData)
+    this.props.ipfs.broadcast(JSON.stringify(postData))
   }
   render() {
     return (

@@ -14,13 +14,18 @@ class Bouncer extends Component {
     }
   }
   componentDidMount(){
-    pollInterval = setInterval(this.load.bind(this),pollTime)
-    this.load()
+  //  pollInterval = setInterval(this.load.bind(this),pollTime)
+  //  this.load()
+    this.props.ipfsMiners.on('message', async (message) => {
+      let data = JSON.parse(message.data)
+      console.log("MINER",data)
+      this.setState({address:data.address})
+    })
   }
   componentWillUnmount(){
-    clearInterval(pollInterval)
+  //  clearInterval(pollInterval)
   }
-  async load(){
+  /*async load(){
     axios.get(this.props.backendUrl+"miner")
     .then((response)=>{
       //console.log(response)
@@ -29,7 +34,7 @@ class Bouncer extends Component {
     .catch((error)=>{
       console.log(error);
     });
-  }
+  }*/
   render() {
 
     let address = "Loading..."

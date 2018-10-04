@@ -10,6 +10,23 @@ import Miner from "./components/miner.js"
 import QRCode from 'qrcode.react';
 import axios from 'axios';
 
+const Room = require('ipfs-pubsub-room')
+const IPFS = require('ipfs')
+const ipfs = new IPFS({
+  repo: './ipfs',
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  config: {
+    Addresses: {
+      Swarm: [
+        '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
+      ]
+    }
+  }
+})
+const IPFSROOMNAME = "bouncer-proxy"
+
 let backendUrl = "http://localhost:10001/"
 console.log("window.location:",window.location)
 if(window.location.href.indexOf("metatx.io")>=0)
@@ -27,7 +44,10 @@ class App extends Component {
      address: window.location.pathname.replace("/",""),
      contract: false,
      owner: "",
-     bouncer: ""
+     bouncer: "",
+     ipfs: Room(ipfs,IPFSROOMNAME),
+     ipfsSigs: Room(ipfs,IPFSROOMNAME+"Sigs"),
+     ipfsMiners: Room(ipfs,IPFSROOMNAME+"Miners")
    }
   }
   deployBouncerProxy() {
@@ -47,6 +67,7 @@ class App extends Component {
         })
         .catch((error)=>{
           console.log(error);
+          window.location = "/"+receipt.contractAddress
         })
       }
     })
@@ -200,6 +221,12 @@ class App extends Component {
                 }}
                 updateBouncer={this.updateBouncer.bind(this)}
               />
+              <div>
+                <Bouncer
+                  {...this.state}
+                  backendUrl={backendUrl}
+                />
+              </div>
             </div>
           )
         }else{
@@ -280,7 +307,6 @@ class App extends Component {
         {contractDisplay}
         {qr}
         {backend}
-
       </div>
     );
   }
