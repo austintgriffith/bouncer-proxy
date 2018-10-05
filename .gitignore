@@ -1,3 +1,4 @@
+backend/ipfs
 src/contracts/*
 public/reload.txt
 deploy.network
