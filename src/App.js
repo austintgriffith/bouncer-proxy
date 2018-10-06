@@ -4,12 +4,33 @@ import './App.css';
 import { Dapparatus, Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, Address, Button } from "dapparatus"
 import Web3 from 'web3';
 import EthCrypto from 'eth-crypto';
+import axios from 'axios';
+
 var QRCode = require('qrcode.react');
 const queryString = require('query-string');
 
+let backendUrl = "http://metatx.me:10005/"
+
+const Room = require('ipfs-pubsub-room')
+const IPFS = require('ipfs')
+const ipfs = new IPFS({
+  repo: './ipfs',
+  EXPERIMENTAL: {
+    pubsub: true
+  },
+  config: {
+    Addresses: {
+      Swarm: [
+        '/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star'
+      ]
+    }
+  }
+})
+const IPFSROOMNAME = "ethsf-meta-connect"
+
 const METATX = {
-  endpoint:"http://0.0.0.0:10001/",
-  contract:"0xf5bf6541843D2ba2865e9aeC153F28aaD96F6fbc",
+  //endpoint:"http://0.0.0.0:10001/",
+  //contract:"0xf5bf6541843D2ba2865e9aeC153F28aaD96F6fbc",
   //accountGenerator: "//account.metatx.io",
 }
 const WEB3_PROVIDER = 'http://metatx.me:8545'
@@ -34,7 +55,9 @@ class App extends Component {
       query: queryParams,
       handle: handle,
       handle1: queryParams.handle1,
-      timestamp1: queryParams.timestamp1
+      timestamp1: queryParams.timestamp1,
+      sig1: queryParams.sig1,
+      ipfs: Room(ipfs,IPFSROOMNAME),
     }
     console.log("State starts as",this.state)
   }
@@ -56,15 +79,44 @@ class App extends Component {
     this.setState(update,async ()=>{
       if(this.state.contracts){
         console.log("SETSTATE!",this.state)
-        console.log("hash1",this.state.handle,this.state.timestamp)
-        let hash1 = await this.state.contracts.MetaConnect.getHash1(this.state.web3.utils.toHex(this.state.handle),this.state.timestamp).call()
-        console.log("hash1",hash1)
-        const signature = EthCrypto.sign(cookie.load('metaPrivateKey'), hash1);
-        console.log("signature",signature)
-        let url = "/?handle1="+this.state.handle+"&timestamp1="+this.state.timestamp
-        this.setState({url})
-      }
 
+        if(!this.state.handle) {
+          //wiaitng for input
+        } else if(this.state.handle1 && this.state.timestamp1 && this.state.sig1 && this.state.handle) {
+          console.log("hash2",this.state.web3.utils.toHex(this.state.handle1),this.state.timestamp1,this.state.sig1,this.state.web3.utils.toHex(this.state.handle))
+          //getHash2(bytes32 handle1, uint256 timestamp, bytes sig1, bytes32 handle2)
+          let hash2 = await this.state.contracts.MetaConnect.getHash2(this.state.web3.utils.toHex(this.state.handle1),this.state.timestamp1,this.state.sig1,this.state.web3.utils.toHex(this.state.handle)).call()
+          console.log("hash2",hash2)
+
+          const signature = EthCrypto.sign(cookie.load('metaPrivateKey'), hash2);
+          console.log("signature",signature)
+          //this.setState({url})
+          let arrayData = [this.state.web3.utils.toHex(this.state.handle1),this.state.timestamp1,this.state.sig1,this.state.web3.utils.toHex(this.state.handle),signature]
+          console.log("broadcast",arrayData)
+          //this.state.ipfs.broadcast(JSON.stringify(arrayData))
+          axios.post(backendUrl+'connect', arrayData, {
+              headers: {
+                  'Content-Type': 'application/json',
+              }
+            }).then((response)=>{
+              console.log("TX RESULT",response)
+              window.location = "/"
+            })
+            .catch((error)=>{
+              console.log(error);
+            });
+        } else   if(this.state.handle && this.state.timestamp){
+          console.log("hash1",this.state.handle,this.state.timestamp)
+          let hash1 = await this.state.contracts.MetaConnect.getHash1(this.state.web3.utils.toHex(this.state.handle),this.state.timestamp).call()
+          console.log("hash1",hash1)
+          const signature = EthCrypto.sign(cookie.load('metaPrivateKey'), hash1);
+          console.log("signature",signature)
+          let url = "/?handle1="+this.state.handle+"&timestamp1="+this.state.timestamp+"&sig1="+signature
+          this.setState({url})
+        }
+
+
+      }
     })
   }
   render() {
@@ -130,7 +182,7 @@ class App extends Component {
               handle: {this.state.handle}
               timestamp: {this.state.timestamp}
               <div>
-                 <QRCode value={DOMAIN+this.state.url} />
+                 <QRCode size={256} value={DOMAIN+this.state.url} />
               </div>
               {DOMAIN+this.state.url}
 
