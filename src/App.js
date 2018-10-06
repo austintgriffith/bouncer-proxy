@@ -1,283 +1,199 @@
 import React, { Component } from 'react';
-import { Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, Address, Button } from "dapparatus"
-import Web3 from 'web3';
+import cookie from 'react-cookies'
 import './App.css';
-import Owner from "./components/owner.js"
-import AllBouncers from "./components/allBouncers.js"
-import Bouncer from "./components/bouncer.js"
-import Backend from "./components/backend.js"
-import Miner from "./components/miner.js"
-import QRCode from 'qrcode.react';
-import axios from 'axios';
+import { Dapparatus, Metamask, Gas, ContractLoader, Transactions, Events, Scaler, Blockie, Address, Button } from "dapparatus"
+import Web3 from 'web3';
+import EthCrypto from 'eth-crypto';
+var QRCode = require('qrcode.react');
+const queryString = require('query-string');
 
-let backendUrl = "http://localhost:10001/"
-console.log("window.location:",window.location)
-if(window.location.href.indexOf("metatx.io")>=0)
-{
-  backendUrl = "https://backend.metatx.io/"
+const METATX = {
+  endpoint:"http://0.0.0.0:10001/",
+  contract:"0xf5bf6541843D2ba2865e9aeC153F28aaD96F6fbc",
+  //accountGenerator: "//account.metatx.io",
 }
+const WEB3_PROVIDER = 'http://metatx.me:8545'
+//const WEB3_PROVIDER = 'https://rinkeby.infura.io/v3/b83784c3e679479a867520aa047f1532'
+
+const DOMAIN = "http://metatx.me:3000"
 
 class App extends Component {
   constructor(props) {
-   super(props);
-   this.state = {
-     web3: false,
-     account: false,
-     gwei: 4,
-     address: window.location.pathname.replace("/",""),
-     contract: false,
-     owner: "",
-     bouncer: ""
-   }
-  }
-  deployBouncerProxy() {
-    let {web3,tx,contracts} = this.state
-    console.log("Deploying bouncer...")
-    let code = require("./contracts/BouncerProxy.bytecode.js")
-    tx(contracts.BouncerProxy._contract.deploy({data:code}),1220000,(receipt)=>{
-      console.log("~~~~~~ DEPLOY FROM DAPPARATUS:",receipt)
-      if(receipt.contractAddress){
-        axios.post(backendUrl+'deploy', receipt, {
-          headers: {
-              'Content-Type': 'application/json',
-          }
-        }).then((response)=>{
-          console.log("CACHE RESULT",response)
-          window.location = "/"+receipt.contractAddress
-        })
-        .catch((error)=>{
-          console.log(error);
-        })
-      }
-    })
+    let queryParams = queryString.parse(window.location.search)
 
+    let handle = cookie.load('handle')
+    if(!handle) handle = handle=queryParams.handle
+    console.log("query",queryParams)
+    super(props);
+    this.state = {
+      web3: false,
+      account: false,
+      gwei: 4,
+      doingTransaction: false,
+      url: "",
+      query: queryParams,
+      handle: handle,
+      handle1: queryParams.handle1,
+      timestamp1: queryParams.timestamp1
+    }
+    console.log("State starts as",this.state)
   }
-  updateBouncer(value){
-    console.log("UPDATE BOUNCER",value)
-    this.setState({bouncer:value})
+  componentDidMount(){
+    console.log("mount")
+      this.poll()
+      setInterval(this.poll.bind(this),5000)
+      this.handleInput({target:"none"})
+  }
+  async poll(){
+    console.log("poll")
+    this.setState({timestamp: Date.now()},()=>{
+      this.handleInput({target:"none"})
+    })
+  }
+  handleInput(e){
+    let update = {}
+    update[e.target.name] = e.target.value
+    this.setState(update,async ()=>{
+      if(this.state.contracts){
+        console.log("SETSTATE!",this.state)
+        console.log("hash1",this.state.handle,this.state.timestamp)
+        let hash1 = await this.state.contracts.MetaConnect.getHash1(this.state.web3.utils.toHex(this.state.handle),this.state.timestamp).call()
+        console.log("hash1",hash1)
+        const signature = EthCrypto.sign(cookie.load('metaPrivateKey'), hash1);
+        console.log("signature",signature)
+        let url = "/?handle1="+this.state.handle+"&timestamp1="+this.state.timestamp
+        this.setState({url})
+      }
+
+    })
   }
   render() {
     let {web3,account,contracts,tx,gwei,block,avgBlockTime,etherscan} = this.state
-
-    let metamask = (
-      <Metamask
-        config={{requiredNetwork:['Unknown','Rinkeby']}}
-        onUpdate={(state)=>{
-          console.log("metamask state update:",state)
-          if(state.web3Provider) {
-            state.web3 = new Web3(state.web3Provider)
-            this.setState(state)
-          }
-        }}
-      />
-    )
-
-    let connectedDisplay = ""
-    let events = ""
+    let connectedDisplay = []
+    let contractsDisplay = []
     if(web3){
-      connectedDisplay = (
-        <div>
-          <ContractLoader
-            config={{DEBUG:true}}
-            web3={web3}
-            require={path => {return require(`${__dirname}/${path}`)}}
-            onReady={(contracts,customLoader)=>{
-              console.log("contracts loaded",contracts)
-              this.setState({contracts:contracts},async ()=>{
-                if(this.state.address){
-                  console.log("Loading dyamic contract "+this.state.address)
-                  let dynamicContract = customLoader("BouncerProxy",this.state.address)//new this.state.web3.eth.Contract(require("./contracts/BouncerProxy.abi.js"),this.state.address)
-                  let owner = await dynamicContract.owner().call()
-                  this.setState({contract:dynamicContract,owner:owner})
-                }
-              })
-            }}
-          />
-          <Transactions
-            config={{DEBUG:false}}
-            account={account}
-            gwei={gwei}
-            web3={web3}
-            block={block}
-            avgBlockTime={avgBlockTime}
-            etherscan={etherscan}
-            onReady={(state)=>{
-              console.log("Transactions component is ready:",state)
-              this.setState(state)
-            }}
-            onReceipt={(transaction,receipt)=>{
-              // this is one way to get the deployed contract address, but instead I'll switch
-              //  to a more straight forward callback system above
-              console.log("Transaction Receipt",transaction,receipt)
-              /*if(receipt.contractAddress){
-                window.location = "/"+receipt.contractAddress
-              }*/
-            }}
-          />
-          <Gas
-            onUpdate={(state)=>{
-              console.log("Gas price update:",state)
-              this.setState(state,()=>{
-                console.log("GWEI set:",this.state)
-              })
-            }}
-          />
-        </div>
+      connectedDisplay.push(
+       <Gas
+         key="Gas"
+         onUpdate={(state)=>{
+           console.log("Gas price update:",state)
+           this.setState(state,()=>{
+             console.log("GWEI set:",this.state)
+           })
+         }}
+       />
       )
-    }
 
-    let mainTitle = ""
-    let contractDisplay = ""
-    let qr = ""
-    let backend = ""
+      connectedDisplay.push(
+        <ContractLoader
+         key="ContractLoader"
+         config={{DEBUG:true}}
+         web3={web3}
+         require={path => {return require(`${__dirname}/${path}`)}}
+         onReady={(contracts,customLoader)=>{
+           console.log("contracts loaded",contracts)
+           this.setState({contracts:contracts},async ()=>{
+             console.log("Contracts Are Ready:",this.state.contracts)
+             let purpose = await this.state.contracts.MetaConnect.purpose().call()
+             console.log("PURPOSE",purpose)
 
-    if(web3 && contracts){
-      if(!this.state.address){
-        mainTitle = (
-          <div className="titleCenter" style={{marginTop:-50,width:"100%"}}>
-            <Scaler config={{origin:"50px center"}}>
-            <div style={{width:"100%",textAlign:"center",fontSize:150}}>
-             metatx.io
-            </div>
-            <div style={{width:"100%",textAlign:"center",fontSize:14,marginBottom:20}}>
-             exploring etherless meta transactions and universal logins in ethereum
-            </div>
-            <div style={{width:"100%",textAlign:"center"}}>
-              <Button size="2" onClick={()=>{
-                window.location = "https://github.com/austintgriffith/bouncer-proxy/blob/master/README.md"
-              }}>
-              LEARN MORE
-              </Button>
-              <Button color="green" size="2" onClick={this.deployBouncerProxy.bind(this)}>
-              DEPLOY
-              </Button>
-            </div>
+           })
+         }}
+        />
+      )
+      connectedDisplay.push(
+        <Transactions
+          key="Transactions"
+          config={{DEBUG:false}}
+          account={account}
+          gwei={gwei}
+          web3={web3}
+          block={block}
+          avgBlockTime={avgBlockTime}
+          etherscan={etherscan}
+          onReady={(state)=>{
+            console.log("Transactions component is ready:",state)
+            this.setState(state)
+          }}
+          onReceipt={(transaction,receipt)=>{
+            // this is one way to get the deployed contract address, but instead I'll switch
+            //  to a more straight forward callback system above
+            console.log("Transaction Receipt",transaction,receipt)
+          }}
+        />
+      )
 
+      if(contracts){
+        if(this.state.handle){
+          contractsDisplay.push(
+            <div key="UI" style={{padding:30}}>
+              handle: {this.state.handle}
+              timestamp: {this.state.timestamp}
+              <div>
+                 <QRCode value={DOMAIN+this.state.url} />
+              </div>
+              {DOMAIN+this.state.url}
 
-            <div style={{marginTop:150}}>
-              <AllBouncers
-                backendUrl={backendUrl}
-              />
-            </div>
-
-            </Scaler>
-
-
-          </div>
-
-        )
-
-      }else if(this.state.contract){
-
-        qr = (
-          <div style={{position:"fixed",top:100,right:20}}>
-              <Scaler config={{startZoomAt:900,origin:"150px 0px"}}>
-                <QRCode value={window.location.toString()} />
-              </Scaler>
-          </div>
-        )
-
-        backend = (
-          <Backend
-            {...this.state}
-            backendUrl={backendUrl}
-            updateBouncer={this.updateBouncer.bind(this)}
-          />
-        )
-
-        let userDisplay = ""
-        if(this.state.owner.toLowerCase()==this.state.account.toLowerCase()){
-
-          userDisplay = (
-            <div>
-              <Owner
-                {...this.state}
-                onUpdate={(bouncerUpdate)=>{
-                  console.log("bouncerUpdate",bouncerUpdate)
-                  this.setState(bouncerUpdate)
-                }}
-                updateBouncer={this.updateBouncer.bind(this)}
-              />
             </div>
           )
         }else{
-          userDisplay = (
+          const expires = new Date()
+          expires.setDate(expires.getDate() + 365)
+          contractsDisplay.push(
+            <div key="UI" style={{padding:30}}>
+            handle: <input
+                style={{verticalAlign:"middle",width:200,margin:6,maxHeight:20,padding:5,border:'2px solid #ccc',borderRadius:5}}
+                type="text" name="editHandle" value={this.state.editHandle} onChange={this.handleInput.bind(this)}
+            />
             <div>
-              <Bouncer
-                {...this.state}
-                backendUrl={backendUrl}
-              />
+            <Button size="2" style={{}} onClick={async ()=>{
+              this.setState({handle:this.state.editHandle})
+              cookie.save('handle', this.state.editHandle, { path: '/',expires})
+              if(this.state.handle1 && this.state.timestamp1){
+
+                console.log("LOADING HASH!",this.state.handle1,this.state.timestamp1)
+                let hash1 = await this.state.contracts.MetaConnect.getHash1(this.state.web3.utils.toHex(this.state.handle1),this.state.timestamp1).call()
+                console.log("hash1:",hash1)
+                let hash2 = await this.state.contracts.MetaConnect.getHash1(this.state.web3.utils.toHex(this.state.handle1),this.state.timestamp1).call()
+
+                //tx(
+                  //this.state.MetaConnect()
+                //)
+              }
+            }}>
+                  MetaConneeeeeect!
+            </Button>
+            </div>
+
             </div>
           )
         }
 
-        contractDisplay = (
-          <div style={{padding:20}}>
-            <Miner backendUrl={backendUrl} {...this.state} />
-            <Scaler config={{startZoomAt:900}}>
-              <h1><a href="/">metatx.io</a></h1>
-              <div>
-                <Address
-                  {...this.state}
-                  address={this.state.contract._address}
-                />
-              </div>
-              <div>
-                <Address
-                  {...this.state}
-                  address={this.state.owner}
-                />
-              </div>
-            </Scaler>
-            {userDisplay}
-          </div>
-        )
-      }else{
-        contractDisplay = (
-          <div style={{padding:20}}>
-            Connecting to {this.state.address}
-          </div>
-        )
       }
-    }else{
-      contractDisplay = (
-        <div style={{padding:20}}>
-          <div className="titleCenter" style={{marginTop:-50}}>
-            <Scaler config={{origin:"center center"}}>
-            <div style={{width:"100%",textAlign:"center",fontSize:150}}>
-             metatx.io
-            </div>
-            <div style={{width:"100%",textAlign:"center",fontSize:14,marginBottom:20}}>
-             please unlock metamask or mobile web3 provider
-            </div>
-            <div style={{width:"100%",textAlign:"center"}}>
-              <Button size="2" onClick={()=>{
-                window.location = "https://github.com/austintgriffith/bouncer-proxy/blob/master/README.md"
-              }}>
-              LEARN MORE
-              </Button>
-              <Button color="orange" size="2" onClick={()=>{
-                alert("Please unlock Metamask or install web3 or mobile ethereum wallet.")
-              }}>
-              DEPLOY
-              </Button>
-            </div>
-            </Scaler>
-          </div>
-        </div>
-      )
-    }
 
+    }
     return (
       <div className="App">
-        {metamask}
-        {connectedDisplay}
-        {events}
-        {mainTitle}
-        {contractDisplay}
-        {qr}
-        {backend}
 
+        <Dapparatus
+          config={{
+            DEBUG:false,
+            requiredNetwork:['Unknown','Rinkeby'],
+          }}
+          metatx={METATX}
+          fallbackWeb3Provider={new Web3.providers.HttpProvider(WEB3_PROVIDER)}
+          //fallbackWeb3Provider={new Web3.providers.WebsocketProvider('ws://rinkeby.infura.io/ws')}
+          onUpdate={(state)=>{
+           console.log("metamask state update:",state)
+           if(state.web3Provider) {
+             state.web3 = new Web3(state.web3Provider)
+             this.setState(state)
+           }
+          }}
+        />
+
+        {connectedDisplay}
+        {contractsDisplay}
       </div>
     );
   }
