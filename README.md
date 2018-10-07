@@ -3,6 +3,8 @@ _Send Ether and interact with smart contracts from etherless accounts through a 
 
 [https://prox.metatx.io](https://prox.metatx.io)
 
+[Ethereum Meta Transactions](https://medium.com/@austin_48503/ethereum-meta-transactions-90ccf0859e84)
+
 -----
 
 [![screencast.png](https://raw.githubusercontent.com/austintgriffith/bouncer-proxy/master/src/images/videopreview.jpg)](https://youtu.be/6r3SqCcEVU4)
