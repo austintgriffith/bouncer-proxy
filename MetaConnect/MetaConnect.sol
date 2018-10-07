@@ -63,7 +63,7 @@ contract MetaConnect {
         revert("MetaConnect::metaConnect Incorrect Version 2");
       } else {
         // solium-disable-next-line arg-overflow
-        from = ecrecover(keccak256(
+        to = ecrecover(keccak256(
           abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash2)
         ), v, r, s);
       }
